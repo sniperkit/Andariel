@@ -8,6 +8,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 	"log"
+	"strconv"
 )
 
 // 对外服务接口
@@ -21,7 +22,7 @@ var collection *mgo.Collection
 
 type CsvParser struct {
 	Id        bson.ObjectId `bson:"_id,omitempty"`
-	ReposID   string        `bson:"Id"`
+	ReposID   int           `bson:"Id"`
 	FullName  string        `bson:"FullName"`
 	StarCount string        `bson:"StarCount"`
 	Language  string        `bson:"Language"`
@@ -69,20 +70,22 @@ func (this *CsvServiceProvider) ParseCsv() {
 			log.Fatal(err)
 		}
 
+		// 将 csv 文件中的 string 转换为 int
+		repoID, err := strconv.Atoi(record[0])
+
+		if err != nil {
+			log.Print(err)
+			continue
+		}
+
 		r := CsvParser{
-			Id:        bson.NewObjectId(),
-			ReposID:   record[0],
-			FullName:  record[1],
-			StarCount: record[2],
-			Language:  record[3],
-			Domain:    record[4],
-			Growth:    record[5],
-			Tf:        record[6],
+			Id:      bson.NewObjectId(),
+			ReposID: repoID,
 		}
 		err = collection.Insert(&r)
 
 		if err != nil {
-			log.Println(err)
+			log.Print(err)
 		}
 	}
 }
@@ -101,10 +104,10 @@ func (this *CsvServiceProvider) GetAllRecords() ([]CsvParser, error) {
 }
 
 // 根据 ID 获取库的数字编号
-func (this *CsvServiceProvider) GetReposIDByID(id string) (string, error) {
-	var csv CsvParser
+func (this *CsvServiceProvider) GetReposIDByID(id string) (int, error) {
+	var repo CsvParser
 
-	err := collection.Find(bson.M{"_id": bson.ObjectIdHex(id)}).One(&csv)
+	err := collection.Find(bson.M{"_id": bson.ObjectIdHex(id)}).One(&repo)
 
-	return csv.ReposID, err
+	return repo.ReposID, err
 }

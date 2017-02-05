@@ -5,7 +5,6 @@ import (
 	"github.com/google/go-github/github"
 	"gopkg.in/mgo.v2"
 	"log"
-	"strconv"
 
 	. "Andariel/utility"
 )
@@ -24,13 +23,13 @@ func init() {
 	collection = session.DB("github").C("repos")
 
 	CsvService.ParseCsv()
-	fmt.Print("Csv parse is over.")
+	fmt.Print("Csv parse is over.\n")
 }
 
 func main() {
 	client := github.NewClient(nil)
 
-	// 获取数据库中所有 csv 记录
+	// 获取所有解析 csv 文件后所得的 id 记录
 	results, err := CsvService.GetAllRecords()
 
 	if err != nil {
@@ -38,17 +37,10 @@ func main() {
 	}
 
 	for _, result := range results {
-		reposID, err := strconv.Atoi(result.ReposID)
-
-		if err != nil {
-			log.Fatal(err)
-			continue
-		}
-
-		repo, _, err := client.Repositories.GetByID(int(reposID))
+		repo, _, err := client.Repositories.GetByID(result.ReposID)
 
 		if _, ok := err.(*github.RateLimitError); ok {
-			log.Println("hit rate limit")
+			log.Println("hit rate limit.")
 		}
 
 		if err != nil {
