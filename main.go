@@ -8,6 +8,7 @@ import (
 	. "Andariel/utility"
 
 	"golang.org/x/oauth2"
+	"gopkg.in/mgo.v2/bson"
 )
 
 var session *mgo.Session
@@ -56,7 +57,7 @@ func main() {
 			continue
 		}
 
-		err = collection.Insert(repo)
+		_, err = collection.Upsert(bson.M{"id": result.ReposID}, repo)
 
 		if err != nil {
 			log.Print(err)

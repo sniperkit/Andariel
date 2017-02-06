@@ -39,47 +39,57 @@ func init() {
 
 // 解析 csv 文件并存入数据库
 func (this *CsvServiceProvider) ParseCsv() {
-	file, err := os.Open("/Users/LLLeon/Desktop/repositories.csv")
+	if ok, err := CsvService.GetAllRecords(); err != nil {
+		panic(err)
 
-	if err != nil {
-		log.Fatal(err)
-	}
+	} else {
+		if ok != nil {
+			log.Print("Already parse csv file.")
 
-	defer file.Close()
+		} else {
+			file, err := os.Open("/Users/LLLeon/Desktop/repositories.csv")
 
-	reader := csv.NewReader(file)
+			if err != nil {
+				log.Fatal(err)
+			}
 
-	reader.LazyQuotes = true
-	reader.Comma = ';'
-	reader.FieldsPerRecord = -1
-	reader.TrimLeadingSpace = true
+			defer file.Close()
 
-	for {
-		record, err := reader.Read()
-		if err == io.EOF {
-			break
-		}
+			reader := csv.NewReader(file)
 
-		if err != nil {
-			log.Fatal(err)
-		}
+			reader.LazyQuotes = true
+			reader.Comma = ';'
+			reader.FieldsPerRecord = -1
+			reader.TrimLeadingSpace = true
 
-		// 将 csv 文件中的 string 转换为 int
-		repoID, err := strconv.Atoi(record[0])
+			for {
+				record, err := reader.Read()
+				if err == io.EOF {
+					break
+				}
 
-		if err != nil {
-			log.Print(err)
-			continue
-		}
+				if err != nil {
+					log.Fatal(err)
+				}
 
-		r := CsvParser{
-			Id:      bson.NewObjectId(),
-			ReposID: repoID,
-		}
-		err = collection.Insert(&r)
+				// 将 csv 文件中的 string 转换为 int
+				repoID, err := strconv.Atoi(record[0])
 
-		if err != nil {
-			log.Print(err)
+				if err != nil {
+					log.Print(err)
+					continue
+				}
+
+				r := CsvParser{
+					Id:      bson.NewObjectId(),
+					ReposID: repoID,
+				}
+				err = collection.Insert(&r)
+
+				if err != nil {
+					log.Print(err)
+				}
+			}
 		}
 	}
 }
