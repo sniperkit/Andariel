@@ -23,12 +23,6 @@ var collection *mgo.Collection
 type CsvParser struct {
 	Id        bson.ObjectId `bson:"_id,omitempty"`
 	ReposID   int           `bson:"Id"`
-	FullName  string        `bson:"FullName"`
-	StarCount string        `bson:"StarCount"`
-	Language  string        `bson:"Language"`
-	Domain    string        `bson:"Domain"`
-	Growth    string        `bson:"Growth"`
-	Tf        string        `bson:"Tf"`
 }
 
 // 连接数据库
