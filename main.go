@@ -5,8 +5,9 @@ import (
 	"github.com/google/go-github/github"
 	"gopkg.in/mgo.v2"
 	"log"
-
 	. "Andariel/utility"
+
+	"golang.org/x/oauth2"
 )
 
 var session *mgo.Session
@@ -27,7 +28,14 @@ func init() {
 }
 
 func main() {
-	client := github.NewClient(nil)
+
+	// 添加身份验证, 提高请求速率
+	ts := oauth2.StaticTokenSource(
+		&oauth2.Token{AccessToken: "54f7488c8f72d3e63692b2bf04167d97e7a29e1d"},
+	)
+	tc := oauth2.NewClient(oauth2.NoContext, ts)
+
+	client := github.NewClient(tc)
 
 	// 获取所有解析 csv 文件后所得的 id 记录
 	results, err := CsvService.GetAllRecords()
@@ -44,7 +52,8 @@ func main() {
 		}
 
 		if err != nil {
-			panic(err)
+			log.Print(err)
+			continue
 		}
 
 		err = collection.Insert(repo)

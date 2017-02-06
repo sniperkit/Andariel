@@ -21,8 +21,8 @@ var session *mgo.Session
 var collection *mgo.Collection
 
 type CsvParser struct {
-	Id        bson.ObjectId `bson:"_id,omitempty"`
-	ReposID   int           `bson:"Id"`
+	Id      bson.ObjectId `bson:"_id,omitempty"`
+	ReposID int           `bson:"Id"`
 }
 
 // 连接数据库
