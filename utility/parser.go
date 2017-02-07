@@ -9,6 +9,8 @@ import (
 
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+
+	"Andariel/mongo"
 )
 
 // 对外服务接口
@@ -17,24 +19,31 @@ type CsvServiceProvider struct {
 
 var CsvService *CsvServiceProvider
 
-var session *mgo.Session
-var collection *mgo.Collection
+//var session *mgo.Session
+var CsvParserCollection *mgo.Collection
 
-type CsvParser struct {
-	Id      bson.ObjectId `bson:"_id,omitempty"`
-	ReposID int           `bson:"Id"`
-}
+// 连接、设置索引
+func PrepareCsvParser() {
+	CsvParserCollection = mongo.GithubSession.DB(mongo.MDGitName).C("csv")
+	idIndex := mgo.Index{
+		Key:        []string{"Id"},
+		Unique:     true,
+		DropDups:   true,
+		Background: true,
+		Sparse:     true,
+	}
 
-// 连接数据库
-func init() {
-	var err error
-	session, err = mgo.Dial("mongodb://10.0.0.254:27017")
-
-	if err != nil {
+	if err := CsvParserCollection.EnsureIndex(idIndex); err != nil {
 		panic(err)
 	}
 
-	collection = session.DB("github").C("csv")
+	CsvService = &CsvServiceProvider{}
+}
+
+// Collection 结构
+type CsvParser struct {
+	Id      bson.ObjectId `bson:"_id,omitempty"`
+	ReposID int           `bson:"Id"`
 }
 
 // 解析 csv 文件并存入数据库
@@ -84,7 +93,7 @@ func (this *CsvServiceProvider) ParseCsv() {
 					Id:      bson.NewObjectId(),
 					ReposID: repoID,
 				}
-				err = collection.Insert(&r)
+				err = CsvParserCollection.Insert(&r)
 
 				if err != nil {
 					log.Print(err)
@@ -98,7 +107,7 @@ func (this *CsvServiceProvider) ParseCsv() {
 func (this *CsvServiceProvider) GetAllRecords() ([]CsvParser, error) {
 	var results []CsvParser
 
-	err := collection.Find(nil).All(&results)
+	err := CsvParserCollection.Find(nil).All(&results)
 
 	if err != nil {
 		panic(err)
@@ -111,7 +120,7 @@ func (this *CsvServiceProvider) GetAllRecords() ([]CsvParser, error) {
 func (this *CsvServiceProvider) GetReposIDByID(id string) (int, error) {
 	var repo CsvParser
 
-	err := collection.Find(bson.M{"_id": bson.ObjectIdHex(id)}).One(&repo)
+	err := CsvParserCollection.Find(bson.M{"_id": bson.ObjectIdHex(id)}).One(&repo)
 
 	return repo.ReposID, err
 }
