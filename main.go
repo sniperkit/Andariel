@@ -1,11 +1,11 @@
 package main
 
 import (
+	. "Andariel/utility"
 	"fmt"
 	"github.com/google/go-github/github"
 	"gopkg.in/mgo.v2"
 	"log"
-	. "Andariel/utility"
 
 	"golang.org/x/oauth2"
 	"gopkg.in/mgo.v2/bson"
@@ -49,18 +49,26 @@ func main() {
 		repo, _, err := client.Repositories.GetByID(result.ReposID)
 
 		if _, ok := err.(*github.RateLimitError); ok {
-			log.Println("hit rate limit.")
+			log.Println("Hit rate limit.")
 		}
 
+		// 如果获取库时报错, 则跳过该库
 		if err != nil {
 			log.Print(err)
 			continue
 		}
 
-		_, err = collection.Upsert(bson.M{"id": result.ReposID}, repo)
+		// 如果是 fork 的库则跳过
+		if *repo.Fork == true {
+			log.Println("This repository is forked.")
 
-		if err != nil {
-			log.Print(err)
+			continue
+		} else {
+			_, err = collection.Upsert(bson.M{"id": result.ReposID}, repo)
+
+			if err != nil {
+				log.Print(err)
+			}
 		}
 	}
 }
