@@ -1,14 +1,15 @@
 package main
 
 import (
-	. "Andariel/utility"
 	"fmt"
-	"github.com/google/go-github/github"
-	"gopkg.in/mgo.v2"
 	"log"
 
+	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
+
+	. "Andariel/utility"
 )
 
 var session *mgo.Session
