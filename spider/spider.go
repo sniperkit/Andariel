@@ -10,7 +10,7 @@ import (
 	"gopkg.in/mgo.v2/bson"
 
 	"Andariel/mongo"
-	. "Andariel/utility"
+	"Andariel/utility"
 )
 
 // 对外服务接口
@@ -48,6 +48,7 @@ func changeToken() func() *github.Client {
 		"54f7488c8f72d3e63692b2bf04167d97e7a29e1d",
 		"5511599ff7aebf94476ce3eda7741ab7ae797ef9",
 		"78d1dcb42b8c4368884603cfcd4f3a1581d771d2",
+		"5df193b89001e9fabfdb947a88cdd8b6e45378f5",
 	}
 
 	return func() *github.Client {
@@ -81,7 +82,7 @@ func GetReposByAPI() {
 	}
 
 	// 获取所有解析 csv 文件后所得的 id 记录
-	results, err := CsvService.GetAllRecords()
+	results, err := util.CsvService.GetAllRecords()
 
 	if err != nil {
 		panic(err)
