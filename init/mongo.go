@@ -6,6 +6,6 @@ import (
 )
 
 func InitMongoCollections() {
-	utility.PrepareCsvParser()
+	util.PrepareCsvParser()
 	spider.PrepareRepos()
 }
