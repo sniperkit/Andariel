@@ -6,15 +6,15 @@ import (
 	"Andariel/init"
 	"Andariel/mongo"
 	"Andariel/spider"
-	. "Andariel/utility"
+	"Andariel/utility"
 )
 
 func initBeforeRun() {
 	mongo.InitGithub()
 	ini.InitMongoCollections()
 
-	CsvService.ParseCsv()
-	fmt.Print("Csv parse is over.\n")
+	util.CsvService.ParseCsv()
+	fmt.Print("Csv parsing is over.\n")
 }
 
 func main() {
