@@ -25,7 +25,7 @@ var ReposCollection *mgo.Collection
 func PrepareRepos() {
 	ReposCollection = mongo.GithubSession.DB(mongo.MDGitName).C("repos")
 	idIndex := mgo.Index{
-		Key:        []string{"id"},
+		Key:        []string{"fullname"},
 		Unique:     true,
 		DropDups:   true,
 		Background: true,
