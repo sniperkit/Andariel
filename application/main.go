@@ -3,10 +3,10 @@ package main
 import (
 	"fmt"
 
-	"Andariel/init"
+	"Andariel/application/init"
 	"Andariel/mongo"
-	"Andariel/spider"
-	"Andariel/utility"
+	"Andariel/models/spider"
+	"Andariel/models/utility"
 )
 
 func initBeforeRun() {
@@ -20,5 +20,5 @@ func initBeforeRun() {
 func main() {
 	initBeforeRun()
 
-	spider.GetReposByAPI()
+	spider.RequestService.CronJob()
 }

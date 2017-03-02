@@ -10,7 +10,8 @@ import (
 	"gopkg.in/mgo.v2/bson"
 
 	"Andariel/mongo"
-	"Andariel/utility"
+	"Andariel/models/utility"
+	"strings"
 )
 
 // 对外服务接口
@@ -20,6 +21,7 @@ type SpiderServiceProvider struct {
 var SpiderService *SpiderServiceProvider
 
 var ReposCollection *mgo.Collection
+
 
 // 连接、设置索引
 func PrepareRepos() {
@@ -106,6 +108,16 @@ func GetReposByAPI() {
 
 		if err != nil {
 			log.Print(err)
+
+			a := strings.Contains(err.Error(),"404 Not Found []")
+			if a == true {
+				err = util.CsvParserCollection.Remove(bson.M{"Id": result.ReposID})
+
+				if err != nil {
+					log.Print(err)
+				}
+				log.Print("This is has removed.")
+			}
 			continue
 		}
 

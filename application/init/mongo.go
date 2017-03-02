@@ -1,11 +1,12 @@
 package ini
 
 import (
-	"Andariel/utility"
-	"Andariel/spider"
+	"Andariel/models/utility"
+	"Andariel/models/spider"
 )
 
 func InitMongoCollections() {
 	util.PrepareCsvParser()
 	spider.PrepareRepos()
+	spider.PrepareStar()
 }
