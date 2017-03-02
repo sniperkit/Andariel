@@ -20,5 +20,5 @@ func initBeforeRun() {
 func main() {
 	initBeforeRun()
 
-	spider.RequestService.CronJob()
+	spider.RequestService.GetTrendingMonth()
 }

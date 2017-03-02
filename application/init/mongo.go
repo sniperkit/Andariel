@@ -8,5 +8,5 @@ import (
 func InitMongoCollections() {
 	util.PrepareCsvParser()
 	spider.PrepareRepos()
-	spider.PrepareStar()
+	spider.PrepareTren()
 }
