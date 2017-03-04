@@ -10,6 +10,7 @@ import (
 	"time"
 	"strconv"
 	"gopkg.in/mgo.v2/bson"
+	"github.com/google/go-github/github"
 )
 
 type RequestServiceProvider struct {
@@ -18,6 +19,7 @@ type RequestServiceProvider struct {
 var RequestService *RequestServiceProvider
 
 var TrendingCollection *mgo.Collection
+var PopularCollection *mgo.Collection
 
 
 func PrepareTren() {
@@ -35,10 +37,30 @@ func PrepareTren() {
 	}
 }
 
+func PreparePop() {
+	PopularCollection = mongo.GithubSession.DB(mongo.MDGitName).C("popular")
+	idIndex := mgo.Index{
+		Key: 		[]string{"name"},
+		Unique: 	true,
+		DropDups: 	true,
+		Background: 	true,
+		Sparse: 	true,
+	}
+
+	if err:= PopularCollection.EnsureIndex(idIndex); err != nil {
+		panic(err)
+	}
+}
 type Trending struct {
 	CreateTime	string	 		`json:"create_time"`
 	Repos 		[]trending.Project	`json:"repos"`
 }
+
+type Popular struct {
+	ParseTime 	time.Time 			`json:"parse_time"`
+	Repos 		*github.RepositoriesSearchResult	`json:"repos"`
+}
+
 
 func (this *RequestServiceProvider)CronJob() {
 	c := cron.New()
@@ -123,4 +145,37 @@ func (this *RequestServiceProvider) GetTrendingFromMD(tm string) ([]trending.Pro
 		log.Print(err)
 	}
 	return m.Repos, err
+}
+
+//获取 popular 库
+func (this *RequestServiceProvider) GetPopular() error{
+	var client *github.Client
+
+	opt := &github.SearchOptions{Sort: "stars"}
+	result, _, err := client.Search.Repositories("", opt)
+	if err != nil {
+		log.Print(err)
+		return err
+	} else {
+		r := Popular{
+			ParseTime: 	time.Now(),
+			Repos: 		result,
+		}
+		err = PopularCollection.Insert(r)
+		if err != nil {
+			log.Print(err)
+		}
+		return err
+	}
+}
+
+// 从数据库获取 popular
+func (this *RequestServiceProvider) GetPopularFromDB() error {
+	var r Popular
+
+	err := PopularCollection.Find(bson.M{}).Sort("-parse_time").One(&r)
+	if err != nil {
+		log.Print(err)
+	}
+	return err
 }

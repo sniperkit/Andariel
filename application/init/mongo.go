@@ -9,4 +9,5 @@ func InitMongoCollections() {
 	util.PrepareCsvParser()
 	spider.PrepareRepos()
 	spider.PrepareTren()
+	spider.PreparePop()
 }
