@@ -3,7 +3,6 @@ package spider
 import (
 	"Andariel/mongo"
 	"gopkg.in/mgo.v2"
-	"github.com/robfig/cron"
 	"github.com/andygrunwald/go-trending"
 
 	"log"
@@ -11,6 +10,7 @@ import (
 	"strconv"
 	"gopkg.in/mgo.v2/bson"
 	"github.com/google/go-github/github"
+	"fmt"
 )
 
 type RequestServiceProvider struct {
@@ -61,20 +61,12 @@ type Popular struct {
 	Repos 		*github.RepositoriesSearchResult	`json:"repos"`
 }
 
-
-func (this *RequestServiceProvider)CronJob() {
-	c := cron.New()
-	c.AddFunc("@daily", RequestService.GetTrendingToday)
-	c.Start()
-	select {}
-}
-
 // 获取一天的 trending
-func (this *RequestServiceProvider) GetTrendingToday() {
+func (this *RequestServiceProvider) GetTrendingToday(l string) {
 
 	trend := trending.NewTrending()
 	// trending.TimeTodya 可以换成TimeWeek or TimeMonth 来获取本周或本月的 trending .
-	result, err := trend.GetProjects(trending.TimeToday, "go")
+	result, err := trend.GetProjects(trending.TimeToday, l)
 
 	if err != nil {
 		log.Print(err)
@@ -92,10 +84,10 @@ func (this *RequestServiceProvider) GetTrendingToday() {
 	}
 }
 
-func (this *RequestServiceProvider) GetTrendingWeek() {
+func (this *RequestServiceProvider) GetTrendingWeek(l string) {
 
 	trend := trending.NewTrending()
-	result, err := trend.GetProjects(trending.TimeWeek, "")
+	result, err := trend.GetProjects(trending.TimeWeek, l)
 
 	if err != nil {
 		log.Print(err)
@@ -114,10 +106,10 @@ func (this *RequestServiceProvider) GetTrendingWeek() {
 	}
 }
 
-func (this *RequestServiceProvider) GetTrendingMonth() {
+func (this *RequestServiceProvider) GetTrendingMonth(l string) {
 
 	trend := trending.NewTrending()
-	result, err := trend.GetProjects(trending.TimeMonth, "swift")
+	result, err := trend.GetProjects(trending.TimeMonth, l)
 
 	if err != nil {
 		log.Print(err)
@@ -136,10 +128,10 @@ func (this *RequestServiceProvider) GetTrendingMonth() {
 }
 
 //从数据库获取 trending
-func (this *RequestServiceProvider) GetTrendingFromMD(tm string) ([]trending.Project, error) {
+func (this *RequestServiceProvider) GetTrendingFromMD(t string, l string) ([]trending.Project, error) {
 	var m Trending
 
-	err := TrendingCollection.Find(bson.M{"createtime":tm}).One(&m)
+	err := TrendingCollection.Find(bson.M{"createtime":t, "language": l}).One(&m)
 
 	if err != nil {
 		log.Print(err)
@@ -148,14 +140,14 @@ func (this *RequestServiceProvider) GetTrendingFromMD(tm string) ([]trending.Pro
 }
 
 //获取 popular 库
-func (this *RequestServiceProvider) GetPopular() error{
+func (this *RequestServiceProvider) GetPopular(l string) {
 	var client *github.Client
 
 	opt := &github.SearchOptions{Sort: "stars"}
-	result, _, err := client.Search.Repositories("", opt)
+	query := fmt.Sprintf("tetris+language:%s",l)
+	result, _, err := client.Search.Repositories(query, opt)
 	if err != nil {
 		log.Print(err)
-		return err
 	} else {
 		r := Popular{
 			ParseTime: 	time.Now(),
@@ -165,17 +157,44 @@ func (this *RequestServiceProvider) GetPopular() error{
 		if err != nil {
 			log.Print(err)
 		}
-		return err
 	}
 }
 
 // 从数据库获取 popular
-func (this *RequestServiceProvider) GetPopularFromDB() error {
+func (this *RequestServiceProvider) GetPopularFromDB() (Popular,error) {
 	var r Popular
 
 	err := PopularCollection.Find(bson.M{}).Sort("-parse_time").One(&r)
 	if err != nil {
 		log.Print(err)
 	}
-	return err
+	return r, err
+}
+
+// 指定语言获取
+func (this *RequestServiceProvider) GetTrendingByLanguage() {
+	arr := [6]string{"", "go", "python", "js", "swift", "html"}
+
+	for i := 0; i < 6; i++ {
+		RequestService.GetTrendingToday(arr[i])
+		RequestService.GetPopular(arr[i])
+	}
+}
+
+// 指定语言一周获取一次trending
+func (this *RequestServiceProvider) GetTrendingByLanguageWeek() {
+	arr := [6]string{"","go", "python", "js", "swift", "html"}
+
+	for i := 0; i < 6; i++ {
+		RequestService.GetTrendingWeek(arr[i])
+	}
+}
+
+// 指定语言一个月获取一次trending
+func (this *RequestServiceProvider) GetTrendingByLanguageMonth() {
+	arr := [6]string{"","go", "python", "js", "swift", "html"}
+
+	for i := 0; i < 6; i++{
+		RequestService.GetTrendingMonth(arr[i])
+	}
 }
