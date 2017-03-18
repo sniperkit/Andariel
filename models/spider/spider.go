@@ -42,7 +42,7 @@ func PrepareRepos() {
 }
 
 // 切换 token
-func changeToken() func() *github.Client {
+func ChangeToken() func() *github.Client {
 	var client *github.Client
 
 	i := 0
@@ -76,7 +76,7 @@ func GetReposByAPI() {
 	var client *github.Client
 
 	// 循环设置 token, 提高请求速率
-	nextClient := changeToken()
+	nextClient := ChangeToken()
 	client = nextClient()
 
 	if client == nil {

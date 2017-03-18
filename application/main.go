@@ -1,24 +1,24 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 
 	"Andariel/application/init"
 	"Andariel/mongo"
 	"Andariel/models/spider"
-	"Andariel/models/utility"
+	//"Andariel/models/utility"
 )
 
 func initBeforeRun() {
 	mongo.InitGithub()
 	ini.InitMongoCollections()
 
+    /*
 	util.CsvService.ParseCsv()
-	fmt.Print("Csv parsing is over.\n")
+	fmt.Print("Csv parsing is over.\n")*/
 }
 
 func main() {
 	initBeforeRun()
-
-	spider.RequestService.GetTrendingMonth()
+	spider.RequestService.Chanel()
 }
