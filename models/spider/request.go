@@ -262,7 +262,7 @@ func (this *RequestServiceProvider) Chanel() {
 			if err != nil {
 				log.Print(err)
 			}
-			log.Print("git/office...", o)
+			log.Print("git/office...", o, o.Type  == "getpopularfrommd")
 			switch {
 			case o.Type == "gettrendingfrommd":
 				log.Print("gettrendingfrommd start.")
@@ -275,16 +275,20 @@ func (this *RequestServiceProvider) Chanel() {
 					log.Print(er)
 				}
 				nc.Publish(msg.Reply, s)
+				nc.Flush()
 			case o.Type == "getpopularfrommd":
 				pop, err := RequestService.GetPopularFromMD(o.Language)
 				if err != nil {
 					log.Print(err)
 				}
-				p, er := json.Marshal(pop.Repos)
+
+				p, er := json.Marshal(pop)
 				if er != nil {
 					log.Print(er)
 				}
+				log.Println(p)
 				nc.Publish(msg.Reply, p)
+				nc.Flush()
 			default:
 				log.Print("Not Found Func.")
 			}
