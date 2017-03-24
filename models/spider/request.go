@@ -237,10 +237,12 @@ func (this *RequestServiceProvider) GetTrendingByLanguageMonth() {
 func (this *RequestServiceProvider) Chanel() {
 	var s Gitspider
 	var o Gitoffice
+
 	nc ,err := nats.Connect("nats://10.0.0.254:4223")
 	if err != nil {
 		log.Print("Cann`t connect:",err)
 	}
+
 	nc.Subscribe("git/spider", func(msg *nats.Msg) {
 
 		err := json.Unmarshal(msg.Data, &s)
@@ -257,6 +259,7 @@ func (this *RequestServiceProvider) Chanel() {
 			RequestService.GetTrendingByLanguageMonth()
 		}
 	})
+
 	nc.Subscribe("git/office", func(msg *nats.Msg){
 			err := json.Unmarshal(msg.Data, &o)
 			if err != nil {
@@ -276,6 +279,7 @@ func (this *RequestServiceProvider) Chanel() {
 				}
 				nc.Publish(msg.Reply, s)
 				nc.Flush()
+
 			case o.Type == "getpopularfrommd":
 				pop, err := RequestService.GetPopularFromMD(o.Language)
 				if err != nil {
@@ -286,9 +290,9 @@ func (this *RequestServiceProvider) Chanel() {
 				if er != nil {
 					log.Print(er)
 				}
-				log.Println(p)
 				nc.Publish(msg.Reply, p)
 				nc.Flush()
+                
 			default:
 				log.Print("Not Found Func.")
 			}
