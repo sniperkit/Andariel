@@ -79,13 +79,12 @@ type Gitoffice struct {
 }
 // 获取一天的 trending
 func (this *RequestServiceProvider) GetTrendingToday(l string) {
-
+	log.Print("Get trending start: ",l)
 	trend := trending.NewTrending()
 	// trending.TimeTodya 可以换成TimeWeek or TimeMonth 来获取本周或本月的 trending .
 	result, err := trend.GetProjects(trending.TimeToday, l)
 
 	if err != nil {
-		log.Print("first error")
 		log.Print(err)
 	}
 	t := time.Now().Format("20060102")
@@ -98,10 +97,9 @@ func (this *RequestServiceProvider) GetTrendingToday(l string) {
 	err = TrendingCollection.Insert(i)
 
 	if err != nil {
-		log.Print("third error")
 		log.Print(err)
 	}
-	log.Print("complate.")
+	log.Print("Get trending complate.")
 }
 
 func (this *RequestServiceProvider) GetTrendingWeek(l string) {
@@ -174,6 +172,7 @@ func (this *RequestServiceProvider) GetPopularFromMD(l string) (Popular,error) {
 
 //获取 popular 库
 func (this *RequestServiceProvider) GetPopular(l string) {
+    log.Print("Get popular start: ", l)
 	var client *github.Client
 
 	nextClient := ChangeToken()
@@ -185,7 +184,6 @@ func (this *RequestServiceProvider) GetPopular(l string) {
 
 	opt := &github.SearchOptions{Sort: "stars"}
 	query := fmt.Sprintf("language:%s",l)
-	log.Print(query)
 	result, _, err := client.Search.Repositories(query, opt)
 	if err != nil {
 		log.Print("4th error")
@@ -198,21 +196,22 @@ func (this *RequestServiceProvider) GetPopular(l string) {
 		}
 		err = PopularCollection.Insert(r)
 		if err != nil {
-			log.Print("second error.")
 			log.Print(err)
 		}
 	}
-	log.Print("complate too.")
+	log.Print("Get popular complate.")
 }
 
 // 指定语言获取
 func (this *RequestServiceProvider) GetTrendingByLanguage() {
-	arr := [6]string{"", "go", "python", "js", "swift", "html"}
+	arr := []string{"", "go", "python", "js", "swift", "html"}
 
-	for i := 0; i < 6; i++ {
+    log.Print("loop begin.")
+	for i := 0; i < len(arr); i++ {
 		RequestService.GetTrendingToday(arr[i])
 		RequestService.GetPopular(arr[i])
 	}
+    log.Print("loop end.")
 }
 
 // 指定语言一周获取一次trending
