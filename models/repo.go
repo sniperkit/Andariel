@@ -24,7 +24,73 @@
 
 /*
  * Revision History:
- *     Initial: 2017/04/17        Feng Yifei
+ *     Initial: 2017/04/17        Yusan Kurban
  */
 
 package models
+
+import (
+	"gopkg.in/mgo.v2/bson"
+	"time"
+)
+
+type Repository struct {
+	ID 					bson.ObjectId	`bson:"_id,omitempty",json:"_id"`
+	RepoID 				uint64 			`json:"id,omitempty"`
+	Owner				OwnerInfo		`json:"owner,omitempty"`
+	Name				string			`json:"name,omitempty"`
+	FullName			string			`json:"fullname,omitempty"`
+	Description 		string			`json:"description,omitempty"`
+	DefaultBranch 		string			`json:"defaultbranch,omitempty"`
+	Language 			string			`json:"language,omitempty"`
+	Created     		TimeStamp		`json:"created,omitempty"`
+	Updated 			TimeStamp		`json:"updated,omitempty"`
+	Pushed 				TimeStamp		`json:"pushed,omitempty"`
+	
+	// Urls
+	ApiUrl 				string			`json:"url,omitempty"`
+	HtmlUrl 			string			`json:"htmlurl,omitempty"`
+	ArchiveUrl 			string			`json:"archiveurl,omitempty"`
+	BranchesUrl			string 			`json:"branchesurl,omitempty"`
+	CloneUrl 			string			`json:"cloneurl,omitempty"`
+	CommentsUrl 		string			`json:"commentsurl,omitempty"`
+	CommitsUrl			string			`json:"commitsurl,omitempty"`
+	ContributorsUrl 	string			`json:"contributorsurl,omitempty"`
+	DownloadUrl 		string			`json:"downloadurl,omitempty"`
+	EventsUrl 			string			`json:"eventsurl,omitempty"`
+	ForksUrl			string			`json:"forksurl,omitempty"`
+	GitUrl 				string			`json:"giturl,omitempty"`
+	IssuesUrl 			string 			`json:"issuesurl,omitempty"`
+	LanguageUrl 		string 			`json:"languageurl,omitempty"`
+	MergesUrl 			string 			`json:"mergesurl,omitempty"`
+	MilestoneUrl		string 			`json:"milestoneurl,omitempty"`
+	NotificationsUrl	string 			`json:"notificationsurl,omitempty"`
+	SshUrl 				string			`json:"sshurl,omitempty"`
+	SubscribersUrl	 	string			`json:"subscribersurl,omitempty"`
+	SubscriptionUrl		string			`json:"subscriptionurl,omitempty"`
+	
+	Private 			bool            `json:"private,omitempty"`
+	Fork 				bool            `json:"fork,omitempty"`
+	HasWiki 			bool 			`json:"haswiki,omitempty"`
+	HasIssues			bool 			`json:"hasissues,omitempty"`
+	HasDownloads 		bool            `json:"hasdownloads,omitempty"`
+	
+	// Counts
+	ForkCount 			uint64			`json:"forkcount,omitempty"`
+	StarCount 			uint64			`json:"starcount,omitempty"`
+	WatchersCounts		uint64 			`json:"watcherscounts,omitempty"`
+	OpenIssuesCount 	uint64			`json:"openissuescount,omitempty"`
+	Size 				uint64			`json:"size,omitempty"`
+}
+
+type TimeStamp struct {
+	Time 				time.Time		`json:"time,omitempty"`
+}
+
+type OwnerInfo struct {
+	OwnerID 			uint64			`json:"id,omitempty"`
+	AvatarUrl 			string			`json:"avatarurl,omitempty"`
+	OwnerUrl 			string			`json:"url,omitempty"`
+	HtmlUrl 			string			`json:"htmlurl,omitempty"`
+	ReposUrl			string			`json:"reposurl,omitempty"`
+} 
