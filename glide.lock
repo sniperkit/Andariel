@@ -1,0 +1,19 @@
+hash: 9a81c9790ae9f602b47ae9af3b6d3e4ffa3db76a98e750bc30687814bb068884
+updated: 2017-04-17T11:30:39.242604968+08:00
+imports:
+- name: github.com/google/go-github
+  version: de33c46a823d3f723514fc5333b75ef2e937b7df
+  subpackages:
+  - github
+- name: github.com/nats-io/go-nats
+  version: 61923ed1eaf8398000991fbbee2ef11ab5a5be0d
+- name: golang.org/x/net
+  version: 5602c733f70afc6dcec6766be0d5034d4c4f14de
+  subpackages:
+  - context
+  - html
+- name: gopkg.in/mgo.v2
+  version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
+  subpackages:
+  - bson
+testImports: []
