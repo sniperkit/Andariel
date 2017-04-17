@@ -30,4 +30,5 @@
 package main
 
 func init() {
+	readConfiguration()
 }
