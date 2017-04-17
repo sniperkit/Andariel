@@ -10,7 +10,6 @@ import (
 	"gopkg.in/mgo.v2/bson"
 
 	"Andariel/mongo"
-	"Andariel/models/utility"
 	"strings"
 )
 
