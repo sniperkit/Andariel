@@ -1,19 +1,62 @@
-hash: 9a81c9790ae9f602b47ae9af3b6d3e4ffa3db76a98e750bc30687814bb068884
-updated: 2017-04-17T11:30:39.242604968+08:00
+hash: f75fcfac22f1de8364295300e5e84d1285ce5642483a58c4c4e6b65b61dda87e
+updated: 2017-04-17T11:41:05.886562263+08:00
 imports:
+- name: github.com/andybalholm/cascadia
+  version: 349dd0209470eabd9514242c688c403c0926d266
+- name: github.com/andygrunwald/go-trending
+  version: 41f32fdb94e7e3511503d2c8bab019c9e353fe81
+- name: github.com/golang/protobuf
+  version: 2bba0603135d7d7f5cb73b2125beeda19c09f4ef
+  subpackages:
+  - proto
 - name: github.com/google/go-github
   version: de33c46a823d3f723514fc5333b75ef2e937b7df
   subpackages:
   - github
+- name: github.com/google/go-querystring
+  version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
+  subpackages:
+  - query
+- name: github.com/labstack/echo
+  version: 948d607539e92f3974d8f24951c8975d7342e24a
 - name: github.com/nats-io/go-nats
   version: 61923ed1eaf8398000991fbbee2ef11ab5a5be0d
+- name: github.com/nats-io/nats
+  version: 61923ed1eaf8398000991fbbee2ef11ab5a5be0d
+  subpackages:
+  - encoders/builtin
+  - util
+- name: github.com/nats-io/nuid
+  version: 3cf34f9fca4e88afa9da8eabd75e3326c9941b44
+- name: github.com/PuerkitoBio/goquery
+  version: ed7d758e9a34ba1f55e8084e0d731448b46921a8
 - name: golang.org/x/net
   version: 5602c733f70afc6dcec6766be0d5034d4c4f14de
   subpackages:
   - context
   - html
+  - html/atom
+- name: golang.org/x/oauth2
+  version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
+  subpackages:
+  - internal
+- name: google.golang.org/appengine
+  version: 170382fa85b10b94728989dfcf6cc818b335c952
+  subpackages:
+  - internal
+  - internal/app_identity
+  - internal/base
+  - internal/datastore
+  - internal/log
+  - internal/modules
+  - internal/remote_api
+  - internal/urlfetch
+  - urlfetch
 - name: gopkg.in/mgo.v2
   version: 3f83fa5005286a7fe593b055f0d7771a7dce4655
   subpackages:
   - bson
+  - internal/json
+  - internal/sasl
+  - internal/scram
 testImports: []
