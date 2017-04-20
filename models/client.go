@@ -67,8 +67,10 @@ func (this *GithubClient)init(token string) {
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
 	client := github.NewClient(httpClient)
 	this.Client = client
-	this.StartAt = time.Now()
-	this.requestTimes()
+	_, ok := this.requestTimes()
+	if ok {
+		this.StartAt = time.Now()
+	}
 }
 
 func (this *GithubClient) checkLimit() bool {
@@ -96,13 +98,20 @@ func (this *GithubClient) reset() {
 	this.Limited = false
 }
 
-func (this *GithubClient) requestTimes() {
+func (this *GithubClient) requestTimes() (error, bool) {
 	rate, _, err := this.Client.RateLimits(oauth2.NoContext)
 	if err != nil {
 		log.Println("Get limits creash with error:", err)
+		return err, false
 	}
 	this.Times = rate.Core.Limit - rate.Core.Remaining
 	this.Left = rate.Core.Remaining
+	
+	if this.Left != limit - 1 {
+		return nil, false
+	}
+	
+	return nil, true
 }
 
 func (this *GithubClient) monitor() {
