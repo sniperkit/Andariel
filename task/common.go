@@ -29,12 +29,11 @@
 
 package task
 
-import "time"
+const (
+	TaskSize            = 10
 
-type Task struct {
-	Type       uint16
-	RepoId     uint64
-	ReopName   string
-	Lang       string
-	Date       time.Time
-}
+	TaskSpiderPopular   = 0x01
+	TaskSpiderTreding   = 0x02
+	TaskGetPopular      = 0x03
+	TaskGetTreding      = 0x04
+)
