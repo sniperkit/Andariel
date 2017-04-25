@@ -29,12 +29,14 @@
 
 package task
 
-import "time"
+import (
+	"time"
+)
 
 type Task struct {
-	Type       uint16
-	RepoId     uint64
-	ReopName   string
-	Lang       string
-	Date       time.Time
+	Type     uint16
+	RepoId   uint64
+	RepoName string
+	Lang     string
+	Date     time.Time
 }

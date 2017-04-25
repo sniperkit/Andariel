@@ -30,10 +30,10 @@
 package task
 
 const (
-	TaskSize            = 10
+	TaskSize = 10
 
-	TaskSpiderPopular   = 0x01
-	TaskSpiderTreding   = 0x02
-	TaskGetPopular      = 0x03
-	TaskGetTreding      = 0x04
+	TaskSpiderPopular  = 0x01
+	TaskSpiderTrending = 0x02
+	TaskGetPopular     = 0x03
+	TaskGetTrending    = 0x04
 )
