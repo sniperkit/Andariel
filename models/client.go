@@ -101,7 +101,7 @@ func (this *GithubClient) reset() {
 func (this *GithubClient) requestTimes() (error, bool) {
 	rate, _, err := this.Client.RateLimits(oauth2.NoContext)
 	if err != nil {
-		log.Println("Get limits creash with error:", err)
+		log.Println("Get limits crash with error:", err)
 		return err, false
 	}
 	this.Times = rate.Core.Limit - rate.Core.Remaining
