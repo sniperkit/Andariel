@@ -30,8 +30,7 @@
 package models
 
 import (
-	"time"
-
+	"github.com/google/go-github/github"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 
@@ -64,19 +63,19 @@ func PrepareGitUser() {
 
 // GitHub 用户数据结构
 type User struct {
-	UserID            bson.ObjectId `bson:"_id,omitempty" json:"id"`
-	HTMLURL           string        `bson:"HTMLURL,omitempty" json:"htmlurl"`
-	Name              string        `bson:"Name,omitempty" json:"name"`
-	Email             string        `bson:"Email,omitempty" json:"email"`
-	PublicRepos       uint64        `bson:"PublicRepos,omitempty" json:"publicrepos"`
-	PublicGists       uint64        `bson:"PublicGists,omitempty" json:"publicgists"`
-	Followers         uint64        `bson:"Followers,omitempty" json:"followers"`
-	Following         uint64        `bson:"Following,omitempty" json:"following"`
-	CreatedAt         time.Time     `bson:"CreatedAt,omitempty" json:"created"`
-	UpdatedAt         time.Time     `bson:"UpdatedAt,omitempty" json:"updated"`
-	SuspendedAt       time.Time     `bson:"SuspendedAt,omitempty" json:"suspended"`
-	Type              string        `bson:"Type,omitempty" json:"type"`
-	TotalPrivateRepos uint64        `bson:"TotalPrivateRepos,omitempty" json:"totalprivaterepos"`
-	OwnedPrivateRepos uint64        `bson:"OwnedPrivateRepos,omitempty" json:"ownedprivaterepos"`
-	PrivateGists      uint64        `bson:"PrivateGists,omitempty" json:"privategists"`
+	UserID            bson.ObjectId    `bson:"_id,omitempty" json:"id"`
+	HTMLURL           string           `bson:"HTMLURL,omitempty" json:"htmlurl"`
+	Name              string           `bson:"Name,omitempty" json:"name"`
+	Email             string           `bson:"Email,omitempty" json:"email"`
+	PublicRepos       uint64           `bson:"PublicRepos,omitempty" json:"publicrepos"`
+	PublicGists       uint64           `bson:"PublicGists,omitempty" json:"publicgists"`
+	Followers         uint64           `bson:"Followers,omitempty" json:"followers"`
+	Following         uint64           `bson:"Following,omitempty" json:"following"`
+	CreatedAt         github.Timestamp `bson:"CreatedAt,omitempty" json:"created"`
+	UpdatedAt         github.Timestamp `bson:"UpdatedAt,omitempty" json:"updated"`
+	SuspendedAt       github.Timestamp `bson:"SuspendedAt,omitempty" json:"suspended"`
+	Type              string           `bson:"Type,omitempty" json:"type"`
+	TotalPrivateRepos uint64           `bson:"TotalPrivateRepos,omitempty" json:"totalprivaterepos"`
+	OwnedPrivateRepos uint64           `bson:"OwnedPrivateRepos,omitempty" json:"ownedprivaterepos"`
+	PrivateGists      uint64           `bson:"PrivateGists,omitempty" json:"privategists"`
 }
