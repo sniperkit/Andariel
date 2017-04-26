@@ -63,19 +63,83 @@ func PrepareGitUser() {
 
 // GitHub 用户数据结构
 type User struct {
-	UserID            bson.ObjectId    `bson:"_id,omitempty" json:"id"`
-	HTMLURL           string           `bson:"HTMLURL,omitempty" json:"htmlurl"`
-	Name              string           `bson:"Name,omitempty" json:"name"`
-	Email             string           `bson:"Email,omitempty" json:"email"`
-	PublicRepos       uint64           `bson:"PublicRepos,omitempty" json:"publicrepos"`
-	PublicGists       uint64           `bson:"PublicGists,omitempty" json:"publicgists"`
-	Followers         uint64           `bson:"Followers,omitempty" json:"followers"`
-	Following         uint64           `bson:"Following,omitempty" json:"following"`
-	CreatedAt         github.Timestamp `bson:"CreatedAt,omitempty" json:"created"`
-	UpdatedAt         github.Timestamp `bson:"UpdatedAt,omitempty" json:"updated"`
-	SuspendedAt       github.Timestamp `bson:"SuspendedAt,omitempty" json:"suspended"`
-	Type              string           `bson:"Type,omitempty" json:"type"`
-	TotalPrivateRepos uint64           `bson:"TotalPrivateRepos,omitempty" json:"totalprivaterepos"`
-	OwnedPrivateRepos uint64           `bson:"OwnedPrivateRepos,omitempty" json:"ownedprivaterepos"`
-	PrivateGists      uint64           `bson:"PrivateGists,omitempty" json:"privategists"`
+	UserID            bson.ObjectId     `bson:"_id,omitempty" json:"id"`
+	ID                uint64            `bson:"ID,omitempty" json:"userid"`
+	HTMLURL           string            `bson:"HTMLURL,omitempty" json:"htmlurl"`
+	Name              string            `bson:"Name,omitempty" json:"name"`
+	Email             string            `bson:"Email,omitempty" json:"email"`
+	PublicRepos       uint64            `bson:"PublicRepos,omitempty" json:"publicrepos"`
+	PublicGists       uint64            `bson:"PublicGists,omitempty" json:"publicgists"`
+	Followers         uint64            `bson:"Followers,omitempty" json:"followers"`
+	Following         uint64            `bson:"Following,omitempty" json:"following"`
+	CreatedAt         *github.Timestamp `bson:"CreatedAt,omitempty" json:"created"`
+	UpdatedAt         *github.Timestamp `bson:"UpdatedAt,omitempty" json:"updated"`
+	SuspendedAt       *github.Timestamp `bson:"SuspendedAt,omitempty" json:"suspended"`
+	Type              string            `bson:"Type,omitempty" json:"type"`
+	TotalPrivateRepos uint64            `bson:"TotalPrivateRepos,omitempty" json:"totalprivaterepos"`
+	OwnedPrivateRepos uint64            `bson:"OwnedPrivateRepos,omitempty" json:"ownedprivaterepos"`
+	PrivateGists      uint64            `bson:"PrivateGists,omitempty" json:"privategists"`
+}
+
+// 查询作者信息
+func (usp *GitUserServiceProvider) GetUserByID(userID uint64) (User, error) {
+	var u User
+
+	err := GitUserCollection.Find(bson.M{"ID": userID}).One(&u)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return u, nil
+}
+
+// 通过 name 获取作者在数据库中的 _id
+func (usp *GitUserServiceProvider) GetUserID(name string) (string, error) {
+	var u User
+
+	err := GitUserCollection.Find(bson.M{"Name": name}).One(&u)
+
+	if err != nil {
+		return "", err
+	}
+
+	return u.UserID.Hex(), nil
+}
+
+// 通过 name 判断作者是否存在数据库中
+func (usp *GitUserServiceProvider) IsUserExists(name string) bool {
+	uID, _ := usp.GetUserID(name)
+
+	return uID != ""
+}
+
+// 存储作者信息
+func (usp *GitUserServiceProvider) Create(user *github.User) error {
+	u := User{
+		UserID:            bson.NewObjectId(),
+		ID:                uint64(user.ID),
+		HTMLURL:           string(user.HTMLURL),
+		Name:              string(user.Name),
+		Email:             string(user.Email),
+		PublicRepos:       uint64(user.PublicRepos),
+		PublicGists:       uint64(user.PublicGists),
+		Followers:         uint64(user.Followers),
+		Following:         uint64(user.Following),
+		CreatedAt:         user.CreatedAt,
+		UpdatedAt:         user.UpdatedAt,
+		SuspendedAt:       user.SuspendedAt,
+		Type:              string(user.Type),
+		TotalPrivateRepos: uint64(user.TotalPrivateRepos),
+		OwnedPrivateRepos: uint64(user.OwnedPrivateRepos),
+		PrivateGists:      uint64(user.PrivateGists),
+	}
+
+	err := GitUserCollection.Insert(&u)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
