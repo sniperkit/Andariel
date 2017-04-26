@@ -39,15 +39,15 @@ import (
 )
 
 // 对外服务接口
-type GitRepoServiceProvider struct {
+type GitReposServiceProvider struct {
 }
 
-var GitRepoService *GitRepoServiceProvider
-var GitRepoCollection *mgo.Collection
+var GitReposService *GitReposServiceProvider
+var GitReposCollection *mgo.Collection
 
 // 连接、设置索引
-func PrepareGitRepo() {
-	GitRepoCollection = mongo.GithubSession.DB(mongo.MDGitName).C("gitRepos")
+func PrepareGitRepos() {
+	GitReposCollection = mongo.GithubSession.DB(mongo.MDGitName).C("gitRepos")
 	repoIndex := mgo.Index{
 		Key:        []string{"FullName", "StarCount", "ForkCount", "Language"},
 		Unique:     true,
@@ -55,31 +55,64 @@ func PrepareGitRepo() {
 		Sparse:     true,
 	}
 
-	if err := GitRepoCollection.EnsureIndex(repoIndex); err != nil {
+	if err := GitReposCollection.EnsureIndex(repoIndex); err != nil {
 		panic(err)
 	}
 
-	GitRepoService = &GitRepoServiceProvider{}
+	GitReposService = &GitReposServiceProvider{}
 }
 
 type Repos struct {
-	ID              bson.ObjectId    `bson:"_id,omitempty",json:"id"`
-	RepoID          uint64           `bson:"RepoID,omitempty" json:"repoid,omitempty"`
-	Owner           bson.ObjectId    `bson:"Owner,omitempty" json:"-"`
-	Name            string           `bson:"Name,omitempty" json:"name"`
-	FullName        string           `bson:"FullName,omitempty" json:"fullname"`
-	Description     string           `bson:"Description,omitempty" json:"description"`
-	DefaultBranch   string           `bson:"DefaultBranch,omitempty" json:"defaultbranch"`
-	Language        string           `bson:"Language,omitempty" json:"language"`
-	Created         github.Timestamp `bson:"Created,omitempty" json:"created"`
-	Updated         github.Timestamp `bson:"Updated,omitempty" json:"updated"`
-	Pushed          github.Timestamp `bson:"Pushed,omitempty" json:"pushed"`
-	HasWiki         bool             `bson:"HasWiki,omitempty" json:"haswiki"`
-	HasIssues       bool             `bson:"HasIssues,omitempty" json:"hasissues"`
-	HasDownloads    bool             `bson:"HasDownloads,omitempty" json:"hasdownloads"`
-	ForkCount       uint64           `bson:"ForkCount,omitempty" json:"forkcount"`
-	StarCount       uint64           `bson:"StarCount,omitempty" json:"starcount"`
-	WatchersCounts  uint64           `bson:"WatchersCounts,omitempty" json:"watcherscounts"`
-	OpenIssuesCount uint64           `bson:"OpenIssuesCount,omitempty" json:"openissuescount"`
-	Size            uint64           `bson:"Size,omitempty" json:"size"`
+	ID              bson.ObjectId     `bson:"_id,omitempty",json:"id"`
+	RepoID          uint64            `bson:"RepoID,omitempty" json:"repoid,omitempty"`
+	Owner           bson.ObjectId     `bson:"Owner,omitempty" json:"-"`
+	Name            string            `bson:"Name,omitempty" json:"name"`
+	FullName        string            `bson:"FullName,omitempty" json:"fullname"`
+	Description     string            `bson:"Description,omitempty" json:"description"`
+	DefaultBranch   string            `bson:"DefaultBranch,omitempty" json:"defaultbranch"`
+	Language        string            `bson:"Language,omitempty" json:"language"`
+	Created         *github.Timestamp `bson:"Created,omitempty" json:"created"`
+	Updated         *github.Timestamp `bson:"Updated,omitempty" json:"updated"`
+	Pushed          *github.Timestamp `bson:"Pushed,omitempty" json:"pushed"`
+	HasWiki         bool              `bson:"HasWiki,omitempty" json:"haswiki"`
+	HasIssues       bool              `bson:"HasIssues,omitempty" json:"hasissues"`
+	HasDownloads    bool              `bson:"HasDownloads,omitempty" json:"hasdownloads"`
+	ForkCount       uint64            `bson:"ForkCount,omitempty" json:"forkcount"`
+	StarCount       uint64            `bson:"StarCount,omitempty" json:"starcount"`
+	WatchersCounts  uint64            `bson:"WatchersCounts,omitempty" json:"watcherscounts"`
+	OpenIssuesCount uint64            `bson:"OpenIssuesCount,omitempty" json:"openissuescount"`
+	Size            uint64            `bson:"Size,omitempty" json:"size"`
+}
+
+// 存储库信息
+func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner string) error {
+	r := Repos{
+		ID:              bson.NewObjectId(),
+		RepoID:          uint64(repos.ID),
+		Owner:           bson.ObjectIdHex(owner),
+		Name:            string(repos.Name),
+		FullName:        string(repos.FullName),
+		Description:     string(repos.Description),
+		DefaultBranch:   string(repos.DefaultBranch),
+		Language:        string(repos.Language),
+		Created:         repos.CreatedAt,
+		Updated:         repos.UpdatedAt,
+		Pushed:          repos.PushedAt,
+		HasWiki:         bool(repos.HasWiki),
+		HasIssues:       bool(repos.HasIssues),
+		HasDownloads:    bool(repos.HasDownloads),
+		ForkCount:       uint64(repos.ForksCount),
+		StarCount:       uint64(repos.StargazersCount),
+		WatchersCounts:  uint64(repos.WatchersCount),
+		OpenIssuesCount: uint64(repos.OpenIssuesCount),
+		Size:            uint64(repos.Size),
+	}
+
+	err := GitReposCollection.Insert(&r)
+
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
