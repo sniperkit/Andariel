@@ -49,7 +49,7 @@ var GitRepoCollection *mgo.Collection
 func PrepareGitRepo() {
 	GitRepoCollection = mongo.GithubSession.DB(mongo.MDGitName).C("gitRepos")
 	repoIndex := mgo.Index{
-		Key:        []string{"Name"},
+		Key:        []string{"FullName", "StarCount", "ForkCount", "Language"},
 		Unique:     true,
 		Background: true,
 		Sparse:     true,
