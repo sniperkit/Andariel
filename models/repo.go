@@ -25,72 +25,61 @@
 /*
  * Revision History:
  *     Initial: 2017/04/17        Yusan Kurban
- */
+ 	   Update:  2017/04/26        Jia Chenhui
+*/
 
 package models
 
 import (
+	"github.com/google/go-github/github"
+	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"time"
+
+	"Andariel/mongo"
 )
 
-type Repository struct {
-	ID 					bson.ObjectId	`bson:"_id,omitempty",json:"_id"`
-	RepoID 				uint64 			`json:"id,omitempty"`
-	Owner				OwnerInfo		`json:"owner,omitempty"`
-	Name				string			`json:"name,omitempty"`
-	FullName			string			`json:"fullname,omitempty"`
-	Description 		string			`json:"description,omitempty"`
-	DefaultBranch 		string			`json:"defaultbranch,omitempty"`
-	Language 			string			`json:"language,omitempty"`
-	Created     		TimeStamp		`json:"created,omitempty"`
-	Updated 			TimeStamp		`json:"updated,omitempty"`
-	Pushed 				TimeStamp		`json:"pushed,omitempty"`
-	
-	// Urls
-	ApiUrl 				string			`json:"url,omitempty"`
-	HtmlUrl 			string			`json:"htmlurl,omitempty"`
-	ArchiveUrl 			string			`json:"archiveurl,omitempty"`
-	BranchesUrl			string 			`json:"branchesurl,omitempty"`
-	CloneUrl 			string			`json:"cloneurl,omitempty"`
-	CommentsUrl 		string			`json:"commentsurl,omitempty"`
-	CommitsUrl			string			`json:"commitsurl,omitempty"`
-	ContributorsUrl 	string			`json:"contributorsurl,omitempty"`
-	DownloadUrl 		string			`json:"downloadurl,omitempty"`
-	EventsUrl 			string			`json:"eventsurl,omitempty"`
-	ForksUrl			string			`json:"forksurl,omitempty"`
-	GitUrl 				string			`json:"giturl,omitempty"`
-	IssuesUrl 			string 			`json:"issuesurl,omitempty"`
-	LanguageUrl 		string 			`json:"languageurl,omitempty"`
-	MergesUrl 			string 			`json:"mergesurl,omitempty"`
-	MilestoneUrl		string 			`json:"milestoneurl,omitempty"`
-	NotificationsUrl	string 			`json:"notificationsurl,omitempty"`
-	SshUrl 				string			`json:"sshurl,omitempty"`
-	SubscribersUrl	 	string			`json:"subscribersurl,omitempty"`
-	SubscriptionUrl		string			`json:"subscriptionurl,omitempty"`
-	
-	Private 			bool            `json:"private,omitempty"`
-	Fork 				bool            `json:"fork,omitempty"`
-	HasWiki 			bool 			`json:"haswiki,omitempty"`
-	HasIssues			bool 			`json:"hasissues,omitempty"`
-	HasDownloads 		bool            `json:"hasdownloads,omitempty"`
-	
-	// Counts
-	ForkCount 			uint64			`json:"forkcount,omitempty"`
-	StarCount 			uint64			`json:"starcount,omitempty"`
-	WatchersCounts		uint64 			`json:"watcherscounts,omitempty"`
-	OpenIssuesCount 	uint64			`json:"openissuescount,omitempty"`
-	Size 				uint64			`json:"size,omitempty"`
+// 对外服务接口
+type GitRepoServiceProvider struct {
 }
 
-type TimeStamp struct {
-	Time 				time.Time		`json:"time,omitempty"`
+var GitRepoService *GitRepoServiceProvider
+var GitRepoCollection *mgo.Collection
+
+// 连接、设置索引
+func PrepareGitRepo() {
+	GitRepoCollection = mongo.GithubSession.DB(mongo.MDGitName).C("gitRepos")
+	repoIndex := mgo.Index{
+		Key:        []string{"Name"},
+		Unique:     true,
+		Background: true,
+		Sparse:     true,
+	}
+
+	if err := GitRepoCollection.EnsureIndex(repoIndex); err != nil {
+		panic(err)
+	}
+
+	GitRepoService = &GitRepoServiceProvider{}
 }
 
-type OwnerInfo struct {
-	OwnerID 			uint64			`json:"id,omitempty"`
-	AvatarUrl 			string			`json:"avatarurl,omitempty"`
-	OwnerUrl 			string			`json:"url,omitempty"`
-	HtmlUrl 			string			`json:"htmlurl,omitempty"`
-	ReposUrl			string			`json:"reposurl,omitempty"`
-} 
+type Repos struct {
+	ID              bson.ObjectId    `bson:"_id,omitempty",json:"id"`
+	RepoID          uint64           `bson:"RepoID,omitempty" json:"repoid,omitempty"`
+	Owner           bson.ObjectId    `bson:"Owner,omitempty" json:"-"`
+	Name            string           `bson:"Name,omitempty" json:"name"`
+	FullName        string           `bson:"FullName,omitempty" json:"fullname"`
+	Description     string           `bson:"Description,omitempty" json:"description"`
+	DefaultBranch   string           `bson:"DefaultBranch,omitempty" json:"defaultbranch"`
+	Language        string           `bson:"Language,omitempty" json:"language"`
+	Created         github.Timestamp `bson:"Created,omitempty" json:"created"`
+	Updated         github.Timestamp `bson:"Updated,omitempty" json:"updated"`
+	Pushed          github.Timestamp `bson:"Pushed,omitempty" json:"pushed"`
+	HasWiki         bool             `bson:"HasWiki,omitempty" json:"haswiki"`
+	HasIssues       bool             `bson:"HasIssues,omitempty" json:"hasissues"`
+	HasDownloads    bool             `bson:"HasDownloads,omitempty" json:"hasdownloads"`
+	ForkCount       uint64           `bson:"ForkCount,omitempty" json:"forkcount"`
+	StarCount       uint64           `bson:"StarCount,omitempty" json:"starcount"`
+	WatchersCounts  uint64           `bson:"WatchersCounts,omitempty" json:"watcherscounts"`
+	OpenIssuesCount uint64           `bson:"OpenIssuesCount,omitempty" json:"openissuescount"`
+	Size            uint64           `bson:"Size,omitempty" json:"size"`
+}
