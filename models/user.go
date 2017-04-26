@@ -79,19 +79,4 @@ type User struct {
 	TotalPrivateRepos uint64        `bson:"TotalPrivateRepos,omitempty" json:"totalprivaterepos"`
 	OwnedPrivateRepos uint64        `bson:"OwnedPrivateRepos,omitempty" json:"ownedprivaterepos"`
 	PrivateGists      uint64        `bson:"PrivateGists,omitempty" json:"privategists"`
-
-	// API URLs
-	URL               string `bson:"URL,omitempty" json:"url"`
-	EventsURL         string `bson:"EventsURL,omitempty" json:"eventsurl"`
-	FollowingURL      string `bson:"FollowingURL,omitempty" json:"followingurl"`
-	FollowersURL      string `bson:"FollowersURL,omitempty" json:"followersurl"`
-	GistsURL          string `bson:"GistsURL,omitempty" json:"gistsurl"`
-	OrganizationsURL  string `bson:"OrganizationsURL,omitempty" json:"organizationsurl"`
-	ReceivedEventsURL string `bson:"ReceivedEventsURL,omitempty" json:"receivedeventsurl"`
-	ReposURL          string `bson:"ReposURL,omitempty" json:"reposurl"`
-	StarredURL        string `bson:"StarredURL,omitempty" json:"starredurl"`
-	SubscriptionsURL  string `bson:"SubscriptionsURL,omitempty" json:"subscriptionsurl"`
-
-	// 用户在指定库上拥有的权限
-	Permissions map[string]bool `bson:"Permissions,omitempty" json:"permissions"`
 }
