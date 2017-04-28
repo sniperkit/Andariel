@@ -48,8 +48,11 @@ var logger *log.AndarielLogger = log.AndarielCreateLogger(
 
 
 const (
-	empty = 0
-	limit = 5000
+	empty              		= 0
+	authNonSearchLimit 		= 5000	//per hour
+	nonAuthNonSearchLimit 	= 60
+	authSearchLimit	   		= 30 	//per minutes
+	nonAuthSearchLimit 		= 10
 )
 
 type GithubClient struct {
@@ -61,7 +64,6 @@ type GithubClient struct {
 	Limited     bool
 	Times       int
 	Left        int
-	Count       func()
 }
 
 var GitClient *GithubClient = new(GithubClient)
@@ -78,7 +80,13 @@ func (this *GithubClient) init(token string) {
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
 	client := github.NewClient(httpClient)
 	this.Client = client
-	_, ok := this.requestTimes()
+	err, ok := this.requestTimes()
+
+	if err != nil {
+		logger.Error("Get limits crash with error:", err)
+		return
+	}
+
 	if ok {
 		this.StartAt = time.Now()
 	}
@@ -105,20 +113,19 @@ func (this *GithubClient) onErr() error {
 
 func (this *GithubClient) reset() {
 	this.Times = empty
-	this.Left = limit
+	this.Left = authNonSearchLimit
 	this.Limited = false
 }
 
 func (this *GithubClient) requestTimes() (error, bool) {
 	rate, _, err := this.Client.RateLimits(oauth2.NoContext)
 	if err != nil {
-		logger.Debug("Get limits crash with error:", err)
 		return err, false
 	}
 	this.Times = rate.Core.Limit - rate.Core.Remaining
 	this.Left = rate.Core.Remaining
 
-	if this.Left != limit-1 {
+	if this.Left != authNonSearchLimit- 1 {
 		return nil, false
 	}
 
