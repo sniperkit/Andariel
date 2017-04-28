@@ -29,6 +29,21 @@
 
 package main
 
+import (
+	"Andariel/log"
+	"Andariel/interrupt"
+)
+
+var logger *log.AndarielLogger = log.AndarielCreateLogger(
+	&log.AndarielLogTag{
+		log.LogTagService: "main",
+		log.LogTagType: "main",
+	},
+	log.AndarielLogLevelDefault)
+
 func init() {
+	sigHandler = interrupt.New(finalHandler, func(){})
+	logger.Debug("Interrupt handler initialized")
+
 	readConfiguration()
 }

@@ -24,11 +24,34 @@
 
 /*
  * Revision History:
- *     Initial: 2017/04/17        Feng Yifei
+ *     Initial: 2017/04/28        Feng Yifei
  */
 
 package main
 
-func main() {
-	sigHandler.Wait()
+import (
+	"syscall"
+	"os"
+
+	"Andariel/interrupt"
+)
+
+var (
+	sigHandler *interrupt.Handler
+)
+
+func finalHandler(sig os.Signal) {
+	switch sig {
+	case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
+		logger.Info("Signal quit/term/int captured")
+		return
+
+	case syscall.SIGHUP:
+		logger.Info("Signal hup captured")
+		return
+
+	case syscall.SIGALRM:
+		logger.Info("Signal alrm captured")
+		return
+	}
 }
