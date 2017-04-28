@@ -115,7 +115,7 @@ func (usp *GitUserServiceProvider) IsUserExists(name string) bool {
 }
 
 // 存储作者信息
-func (usp *GitUserServiceProvider) Create(user *github.User) error {
+func (usp *GitUserServiceProvider) Create(user *github.User) (string, error) {
 	u := User{
 		UserID:            bson.NewObjectId(),
 		ID:                uint64(user.ID),
@@ -138,8 +138,8 @@ func (usp *GitUserServiceProvider) Create(user *github.User) error {
 	err := GitUserCollection.Insert(&u)
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return u.UserID.Hex(), nil
 }

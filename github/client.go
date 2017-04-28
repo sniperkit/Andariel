@@ -27,15 +27,15 @@
  *     Initial: 2017/04/17        Yusan Kurban
  */
 
-package models
+package github
 
 import (
 	"github.com/google/go-github/github"
-	"golang.org/x/oauth2"
 	"github.com/pkg/errors"
-	
-	"time"
+	"golang.org/x/oauth2"
+
 	"log"
+	"time"
 )
 
 const (
@@ -44,25 +44,27 @@ const (
 )
 
 type GithubClient struct {
-	Client			*github.Client
-	StartAt			time.Time
-	LimitAt			time.Time
-	RequestTime		time.Duration
-	Timer 			time.Duration
-	Limited 		bool
-	Times			int
-	Left			int
-	Count           func()
+	Client      *github.Client
+	StartAt     time.Time
+	LimitAt     time.Time
+	RequestTime time.Duration
+	Timer       time.Duration
+	Limited     bool
+	Times       int
+	Left        int
+	Count       func()
 }
+
+var GitClient *GithubClient = new(GithubClient)
 
 func newClient(token string) (client *GithubClient) {
 	client = new(GithubClient)
 	client.init(token)
-	
+
 	return client
 }
 
-func (this *GithubClient)init(token string) {
+func (this *GithubClient) init(token string) {
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
 	client := github.NewClient(httpClient)
@@ -88,7 +90,7 @@ func (this *GithubClient) onErr() error {
 		e := github.RateLimitError.Error(*s)
 		return errors.New(e)
 	}
-	
+
 	return nil
 }
 
@@ -106,11 +108,11 @@ func (this *GithubClient) requestTimes() (error, bool) {
 	}
 	this.Times = rate.Core.Limit - rate.Core.Remaining
 	this.Left = rate.Core.Remaining
-	
-	if this.Left != limit - 1 {
+
+	if this.Left != limit-1 {
 		return nil, false
 	}
-	
+
 	return nil, true
 }
 

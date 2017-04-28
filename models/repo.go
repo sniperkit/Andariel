@@ -85,11 +85,11 @@ type Repos struct {
 }
 
 // 存储库信息
-func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner string) error {
+func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *string) error {
 	r := Repos{
 		ID:              bson.NewObjectId(),
 		RepoID:          uint64(repos.ID),
-		Owner:           bson.ObjectIdHex(owner),
+		Owner:           bson.ObjectIdHex(string(owner)),
 		Name:            string(repos.Name),
 		FullName:        string(repos.FullName),
 		Description:     string(repos.Description),
