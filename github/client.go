@@ -30,13 +30,22 @@
 package github
 
 import (
+	"Andariel/log"
+
 	"github.com/google/go-github/github"
 	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 
-	"log"
 	"time"
 )
+
+var logger *log.AndarielLogger = log.AndarielCreateLogger(
+	&log.AndarielLogTag{
+		log.LogTagService: "github",
+		log.LogTagType: "client",
+	},
+	log.AndarielLogLevelDefault)
+
 
 const (
 	empty = 0
@@ -103,7 +112,7 @@ func (this *GithubClient) reset() {
 func (this *GithubClient) requestTimes() (error, bool) {
 	rate, _, err := this.Client.RateLimits(oauth2.NoContext)
 	if err != nil {
-		log.Println("Get limits crash with error:", err)
+		logger.Debug("Get limits crash with error:", err)
 		return err, false
 	}
 	this.Times = rate.Core.Limit - rate.Core.Remaining
