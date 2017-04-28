@@ -38,13 +38,11 @@ import (
 // 调用 API 获取作者信息并存储到数据库（只在判断数据库中没有作者信息时才调用此函数）
 func GetOwnerByID(ownerID int) error {
 	owner, _, err := GitClient.Client.Users.GetByID(context.Background(), ownerID)
-
 	if err != nil {
 		return err
 	}
 
-	err = models.GitUserService.Create(owner)
-
+	_, err = models.GitUserService.Create(owner)
 	if err != nil {
 		return err
 	}

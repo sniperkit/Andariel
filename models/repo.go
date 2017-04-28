@@ -109,7 +109,6 @@ func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *stri
 	}
 
 	err := GitReposCollection.Insert(&r)
-
 	if err != nil {
 		return err
 	}

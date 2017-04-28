@@ -41,7 +41,6 @@ import (
 func GetRepoByID(repoID uint64) error {
 	// 调用官方 API 获取库信息
 	repo, _, err := GitClient.Client.Repositories.GetByID(context.Background(), int(repoID))
-
 	if err != nil {
 
 		return err
@@ -56,7 +55,6 @@ func GetRepoByID(repoID uint64) error {
 
 	// 判断数据库中是否有此作者信息
 	oldUserID, err := models.GitUserService.GetUserID(string(repo.Owner.Name))
-
 	if err != nil {
 		if err != mgo.ErrNotFound {
 
@@ -65,14 +63,12 @@ func GetRepoByID(repoID uint64) error {
 
 		// User 数据库中无此作者信息
 		newUserID, err := models.GitUserService.Create(repo.Owner)
-
 		if err != nil {
 
 			return err
 		}
 
 		err = models.GitReposService.Create(repo, &newUserID)
-
 		if err != nil {
 
 			return err
@@ -81,17 +77,10 @@ func GetRepoByID(repoID uint64) error {
 
 	// User 数据库中有此作者信息
 	err = models.GitReposService.Create(repo, &oldUserID)
-
 	if err != nil {
 
 		return err
 	}
 
 	return nil
-}
-
-// 调用 github API 获取所有库信息并存储到数据库
-func GetAllRepos() (err error) {
-
-	return err
 }

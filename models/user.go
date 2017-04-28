@@ -86,7 +86,6 @@ func (usp *GitUserServiceProvider) GetUserByID(userID uint64) (User, error) {
 	var u User
 
 	err := GitUserCollection.Find(bson.M{"ID": userID}).One(&u)
-
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +98,6 @@ func (usp *GitUserServiceProvider) GetUserID(name string) (string, error) {
 	var u User
 
 	err := GitUserCollection.Find(bson.M{"Name": name}).One(&u)
-
 	if err != nil {
 		return "", err
 	}
@@ -136,7 +134,6 @@ func (usp *GitUserServiceProvider) Create(user *github.User) (string, error) {
 	}
 
 	err := GitUserCollection.Insert(&u)
-
 	if err != nil {
 		return nil, err
 	}
