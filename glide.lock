@@ -1,47 +1,77 @@
-hash: b41b74e1f17210a52cfbc93613870fe0251d89998315b4e2f438f6f3da473d1a
-updated: 2017-04-17T12:51:09.274202433+08:00
+hash: f75b64bd960ee718c05e548d70217a78008db3d645c4f58ec8fc9bfa3658612c
+updated: 2017-04-28T14:08:11.59656097+08:00
 imports:
-- name: github.com/andybalholm/cascadia
-  version: 349dd0209470eabd9514242c688c403c0926d266
-- name: github.com/andygrunwald/go-trending
-  version: 41f32fdb94e7e3511503d2c8bab019c9e353fe81
+- name: github.com/fsnotify/fsnotify
+  version: 4da3e2cfbabc9f751898f250b49f2439785783a1
 - name: github.com/golang/protobuf
   version: 2bba0603135d7d7f5cb73b2125beeda19c09f4ef
   subpackages:
   - proto
 - name: github.com/google/go-github
-  version: de33c46a823d3f723514fc5333b75ef2e937b7df
+  version: e8d46665e050742f457a58088b1e6b794b2ae966
   subpackages:
   - github
 - name: github.com/google/go-querystring
   version: 53e6ce116135b80d037921a7fdd5138cf32d7a8a
   subpackages:
   - query
+- name: github.com/hashicorp/hcl
+  version: 7fa7fff964d035e8a162cce3a164b3ad02ad651b
+  subpackages:
+  - hcl/ast
+  - hcl/parser
+  - hcl/scanner
+  - hcl/strconv
+  - hcl/token
+  - json/parser
+  - json/scanner
+  - json/token
 - name: github.com/labstack/echo
-  version: 948d607539e92f3974d8f24951c8975d7342e24a
+  version: 1049c9613cd371b7ea8f219404c9a821734781ed
+- name: github.com/magiconair/properties
+  version: 51463bfca2576e06c62a8504b5c0f06d61312647
+- name: github.com/mitchellh/mapstructure
+  version: cc8532a8e9a55ea36402aa21efdf403a60d34096
 - name: github.com/nats-io/go-nats
   version: 61923ed1eaf8398000991fbbee2ef11ab5a5be0d
-- name: github.com/nats-io/nats
-  version: 61923ed1eaf8398000991fbbee2ef11ab5a5be0d
+- name: github.com/pelletier/go-buffruneio
+  version: c37440a7cf42ac63b919c752ca73a85067e05992
+- name: github.com/pelletier/go-toml
+  version: fe206efb84b2bc8e8cfafe6b4c1826622be969e3
+- name: github.com/pkg/errors
+  version: ff09b135c25aae272398c51a07235b90a75aa4f0
+- name: github.com/Sirupsen/logrus
+  version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
+- name: github.com/spf13/afero
+  version: 9be650865eab0c12963d8753212f4f9c66cdcf12
   subpackages:
-  - encoders/builtin
-  - util
-- name: github.com/nats-io/nuid
-  version: 3cf34f9fca4e88afa9da8eabd75e3326c9941b44
-- name: github.com/PuerkitoBio/goquery
-  version: ed7d758e9a34ba1f55e8084e0d731448b46921a8
+  - mem
+- name: github.com/spf13/cast
+  version: acbeb36b902d72a7a4c18e8f3241075e7ab763e4
+- name: github.com/spf13/jwalterweatherman
+  version: fa7ca7e836cf3a8bb4ebf799f472c12d7e903d66
+- name: github.com/spf13/pflag
+  version: f1d95a35e132e8a1868023a08932b14f0b8b8fcb
 - name: github.com/spf13/viper
-  version: 84f94806c67f59dd7ae87bc5351f7a9c94a4558d
+  version: 0967fc9aceab2ce9da34061253ac10fb99bba5b2
 - name: golang.org/x/net
-  version: 5602c733f70afc6dcec6766be0d5034d4c4f14de
+  version: da118f7b8e5954f39d0d2130ab35d4bf0e3cb344
   subpackages:
   - context
   - html
-  - html/atom
 - name: golang.org/x/oauth2
   version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
   subpackages:
   - internal
+- name: golang.org/x/sys
+  version: 9ccfe848b9db8435a24c424abbc07a921adf1df5
+  subpackages:
+  - unix
+- name: golang.org/x/text
+  version: 470f45bf29f4147d6fbd7dfd0a02a848e49f5bf4
+  subpackages:
+  - transform
+  - unicode/norm
 - name: google.golang.org/appengine
   version: 170382fa85b10b94728989dfcf6cc818b335c952
   subpackages:
@@ -61,4 +91,6 @@ imports:
   - internal/json
   - internal/sasl
   - internal/scram
+- name: gopkg.in/yaml.v2
+  version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
 testImports: []

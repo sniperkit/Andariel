@@ -89,3 +89,9 @@ func GetRepoByID(repoID uint64) error {
 
 	return nil
 }
+
+// 调用 github API 获取所有库信息并存储到数据库
+func GetAllRepos() (err error) {
+
+	return err
+}
