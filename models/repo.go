@@ -31,6 +31,8 @@
 package models
 
 import (
+	"errors"
+
 	"github.com/google/go-github/github"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
@@ -84,7 +86,7 @@ type Repos struct {
 	Size            uint64            `bson:"Size,omitempty" json:"size"`
 }
 
-// 存储库信息
+// 存储库信息及作者在 User 数据库中的 ID
 func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *string) error {
 	r := Repos{
 		ID:              bson.NewObjectId(),
@@ -110,6 +112,48 @@ func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *stri
 
 	err := GitReposCollection.Insert(&r)
 	if err != nil {
+
+		return err
+	}
+
+	return nil
+}
+
+// 逻辑判断后，存储库信息到数据库
+func StoreRepo(repo *github.Repository) (err error) {
+	// fork 的库不保存
+	if repo.Fork {
+		err = errors.New("this repos is forked from others")
+
+		return err
+	}
+
+	// 判断数据库中是否有此作者信息
+	oldUserID, err := GitUserService.GetUserID(string(repo.Owner.Name))
+	if err != nil {
+		if err != mgo.ErrNotFound {
+
+			return err
+		}
+
+		// User 数据库中无此作者信息
+		newUserID, err := GitUserService.Create(repo.Owner)
+		if err != nil {
+
+			return err
+		}
+
+		err = GitReposService.Create(repo, &newUserID)
+		if err != nil {
+
+			return err
+		}
+	}
+
+	// User 数据库中有此作者信息
+	err = GitReposService.Create(repo, &oldUserID)
+	if err != nil {
+
 		return err
 	}
 

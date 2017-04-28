@@ -31,55 +31,43 @@ package github
 
 import (
 	"context"
-	"errors"
+
+	"github.com/google/go-github/github"
 
 	"Andariel/models"
-	"gopkg.in/mgo.v2"
 )
 
 // 根据库 ID 获取库信息并存储到数据库
-func GetRepoByID(repoID uint64) error {
+func GetRepoByID(repoID int) error {
 	// 调用官方 API 获取库信息
-	repo, _, err := GitClient.Client.Repositories.GetByID(context.Background(), int(repoID))
+	repo, _, err := GitClient.Client.Repositories.GetByID(context.Background(), repoID)
 	if err != nil {
 
 		return err
 	}
 
-	// fork 的库不保存
-	if repo.Fork {
-		err = errors.New("this repos is forked from others")
+	err = models.StoreRepo(repo)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// 调用 github API 获取所有库信息并存储到数据库
+func GetAllRepos(opt *github.RepositoryListAllOptions) error {
+	repos, _, err := GitClient.Client.Repositories.ListAll(context.Background(), opt)
+	if err != nil {
 
 		return err
 	}
 
-	// 判断数据库中是否有此作者信息
-	oldUserID, err := models.GitUserService.GetUserID(string(repo.Owner.Name))
-	if err != nil {
-		if err != mgo.ErrNotFound {
-
-			return err
-		}
-
-		// User 数据库中无此作者信息
-		newUserID, err := models.GitUserService.Create(repo.Owner)
+	for _, repo := range repos {
+		err = models.StoreRepo(repo)
 		if err != nil {
 
 			return err
 		}
-
-		err = models.GitReposService.Create(repo, &newUserID)
-		if err != nil {
-
-			return err
-		}
-	}
-
-	// User 数据库中有此作者信息
-	err = models.GitReposService.Create(repo, &oldUserID)
-	if err != nil {
-
-		return err
 	}
 
 	return nil
