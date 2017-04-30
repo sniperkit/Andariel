@@ -31,12 +31,14 @@ package task
 
 import (
 	"time"
+	"gopkg.in/mgo.v2/bson"
 )
 
 type Task struct {
-	Type     uint16
-	RepoId   uint64
-	RepoName string
-	Lang     string
-	Date     time.Time
+	Id       bson.ObjectId   `bson:"_id,omitempty"`
+	Type     uint16          `bson:"type"`
+	RepoId   uint64          `bson:"repoid"`
+	RepoName string          `bson:"reponame"`
+	Lang     string          `bson:"lang"`
+	Date     time.Time       `bson:"date"`
 }

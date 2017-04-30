@@ -24,19 +24,25 @@
 
 /*
  * Revision History:
- *     Initial: 2017/04/21        Liu Jiachang
+ *     Initial: 2017/04/30        Liu Jiachang
  */
+
 
 package task
 
-const (
-	TaskSize = 10
+type Worker struct {
+    s      *Server
+    t      Task
+    h      Handler
+}
 
-	TaskSpiderPopular  = 0x01
-	TaskSpiderTrending = 0x02
-	TaskGetPopular     = 0x03
-	TaskGetTrending    = 0x04
+func (this *Worker) Run() {
+    go func() {
+        this.h(this.t)
 
-	MDbName            = "github"
-	MDColl             = "task"
-)
+        this.s.mutex.Lock()
+        defer this.s.mutex.Unlock()
+
+        this.s.cursize--
+    }()
+}

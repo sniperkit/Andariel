@@ -30,90 +30,118 @@
 package task
 
 import (
-	"sync"
 	"errors"
+	"gopkg.in/mgo.v2"
+	"time"
+	"gopkg.in/mgo.v2/bson"
+	"sync"
 )
 
 var (
-	ErrTasksLenNotEnough = errors.New("tasks has not enough items for pop")
-	ErrTasksCapNotEnough = errors.New("tasks has not enough space for push")
+	ErrHandlerExists = errors.New("This type handler is exists!")
+	ErrMaxWorker     = errors.New("Max worker!")
+	ErrNoTask        = errors.New("There is no task!")
 )
 
-var (
-	t *taskHelper
-	o sync.Once
-)
+type Handler func(t Task) error
 
-type taskHelper struct {
-	tasks       []Task
-	head        int
-	tail        int
-	size        int
+type Server struct {
+	mutex       sync.RWMutex
+	workersize  uint32
+	cursize     uint32
+	regularchan chan struct{}
+	notifychan  chan struct{}
+	taskSession *mgo.Session
+	mux         map[int]Handler
 }
 
-func GetTaskHelper() *taskHelper {
-	o.Do(func() {
-		t = &taskHelper{
-			tasks: make([]Task, TaskSize + 1),
-			size: TaskSize,
+func NewServer(url string, size uint32) (*Server, error) {
+	Session, err := mgo.DialWithTimeout(url, 5 * time.Second)
+
+	if err != nil {
+		return nil, err
+	}
+
+	s := Server{
+		workersize:       size,
+		cursize:          0,
+		regularchan:      make(chan struct{}),
+		notifychan:       make(chan struct{}),
+		taskSession:      Session,
+		mux:              make(map[int]Handler),
+	}
+
+	return &s, nil
+}
+
+func (this *Server) Register(t int, h Handler) error {
+	_, ok := this.mux[t]
+
+	if !ok {
+		this.mux[t] = h
+
+		return nil
+	}
+
+	return ErrHandlerExists
+}
+
+func (this *Server) NewWorker() (Worker, error) {
+	var t Task
+
+	c := this.taskSession.DB(MDbName).C(MDColl)
+	c.Find(bson.M{}).One(&t)
+	c.RemoveId(t.Id)
+
+	if t == nil {
+		return nil, ErrNoTask
+	}
+
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
+	if this.cursize < this.workersize {
+		this.cursize++
+
+		w := Worker{
+			s:         this,
+			t:         t,
+			h:         this.mux[t.Type],
 		}
-	})
 
-	return t
-}
-
-func (this *taskHelper) Len() int {
-	if this.head == this.tail {
-
-		return 0
-	} else if this.tail > this.head {
-
-		return this.tail - this.head
-	} else {
-
-		return this.tail + this.size + 1 - this.head
-	}
-}
-
-func (this *taskHelper) Cap() int {
-	return this.size - this.Len()
-}
-
-func (this *taskHelper) Pop() (Task, error) {
-	if this.head == this.tail {
-		return nil, ErrTasksLenNotEnough
+		return w, nil
 	}
 
-	t := this.tasks[this.head]
-	this.tasks[this.head] = nil
-	this.head ++
-
-	return t, nil
+	return nil, ErrMaxWorker
 }
 
-func (this *taskHelper) Push(t Task) error {
-	if this.head == this.tail {
-		return ErrTasksCapNotEnough
+func (this *Server) Notify() {
+	this.notifychan <- struct {}{}
+}
+
+func (this *Server) Start() {
+	go func() {
+		for {
+			time.Sleep(3 * time.Second)
+			this.regularchan <- struct {}{}
+		}
+
+	}()
+
+	for {
+		select {
+		case <- this.notifychan:
+			w, err := this.NewWorker()
+
+			if err == nil {
+				w.Run()
+			}
+		case <- this.regularchan:
+			w, err := this.NewWorker()
+
+			if err == nil {
+				w.Run()
+			}
+		}
 	}
-
-	this.tasks[this.tail] = t
-	this.tail = (this.tail + 1) % (this.size + 1)
-
-	return nil
-}
-
-func (this *taskHelper) IsFull() bool {
-	return this.Cap() == 0
-}
-
-func (this *taskHelper) IsEmpty() bool {
-	return this.Len() == 0
-}
-
-func (this *taskHelper) sendToHandler(task Task) {
-
-}
-
-func (this *taskHelper) GetTaskFromMD() {
-
 }
