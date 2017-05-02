@@ -50,6 +50,7 @@ func GetRepoByID(repoID int) (*github.Repository, *github.Response, error) {
 }
 
 // 调用 API 获取所有库信息
+// 参数 opt 指定本次要获取多少个库，将获取的库分多少页，每页包含多少个库（最高 100 个）
 func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, *github.Response, error) {
 	repos, resp, err := GitClient.Client.Repositories.ListAll(context.Background(), opt)
 	if err != nil {
