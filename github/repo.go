@@ -36,22 +36,30 @@ import (
 )
 
 // 根据库 ID 调用 API 获取库信息
-func GetRepoByID(repoID int) (*github.Repository, error) {
-	repo, _, err := GitClient.Client.Repositories.GetByID(context.Background(), repoID)
+func GetRepoByID(repoID int) (*github.Repository, *github.Response, error) {
+	repo, resp, err := GitClient.Client.Repositories.GetByID(context.Background(), repoID)
 	if err != nil {
-		return nil, err
+		if resp == nil {
+			return nil, nil, err
+		}
+
+		return nil, resp, err
 	}
 
-	return repo, nil
+	return repo, resp, nil
 }
 
 // 调用 API 获取所有库信息
-func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, error) {
-	repos, _, err := GitClient.Client.Repositories.ListAll(context.Background(), opt)
+func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, *github.Response, error) {
+	repos, resp, err := GitClient.Client.Repositories.ListAll(context.Background(), opt)
 	if err != nil {
-		return nil, err
+		if resp == nil {
+			return nil, nil, err
+		}
+
+		return nil, resp, err
 	}
 
 	// TODO: 分页处理
-	return repos, nil
+	return repos, resp, nil
 }
