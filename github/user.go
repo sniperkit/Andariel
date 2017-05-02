@@ -35,17 +35,30 @@ import (
 	"Andariel/models"
 )
 
-// 调用 API 获取作者信息并存储到数据库（只在判断数据库中没有作者信息时才调用此函数）
-func GetOwnerByID(ownerID int) error {
+// 调用 API 获取作者信息
+func GetOwnerByID(ownerID int) (*models.User, error) {
 	owner, _, err := GitClient.Client.Users.GetByID(context.Background(), ownerID)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err = models.GitUserService.Create(owner)
-	if err != nil {
-		return err
+	user := &models.User{
+		ID:                uint64(owner.ID),
+		HTMLURL:           string(owner.HTMLURL),
+		Name:              string(owner.Name),
+		Email:             string(owner.Email),
+		PublicRepos:       uint64(owner.PublicRepos),
+		PublicGists:       uint64(owner.PublicGists),
+		Followers:         uint64(owner.Followers),
+		Following:         uint64(owner.Following),
+		CreatedAt:         owner.CreatedAt,
+		UpdatedAt:         owner.UpdatedAt,
+		SuspendedAt:       owner.SuspendedAt,
+		Type:              string(owner.Type),
+		TotalPrivateRepos: uint64(owner.TotalPrivateRepos),
+		OwnedPrivateRepos: uint64(owner.OwnedPrivateRepos),
+		PrivateGists:      uint64(owner.PrivateGists),
 	}
 
-	return nil
+	return user, nil
 }

@@ -33,42 +33,25 @@ import (
 	"context"
 
 	"github.com/google/go-github/github"
-
-	"Andariel/models"
 )
 
-// 根据库 ID 获取库信息并存储到数据库
-func GetRepoByID(repoID int) error {
-	// 调用官方 API 获取库信息
+// 根据库 ID 调用 API 获取库信息
+func GetRepoByID(repoID int) (*github.Repository, error) {
 	repo, _, err := GitClient.Client.Repositories.GetByID(context.Background(), repoID)
 	if err != nil {
-
-		return err
+		return nil, err
 	}
 
-	err = models.StoreRepo(repo)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return repo, nil
 }
 
-// 调用 github API 获取所有库信息并存储到数据库
-func GetAllRepos(opt *github.RepositoryListAllOptions) error {
+// 调用 API 获取所有库信息
+func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, error) {
 	repos, _, err := GitClient.Client.Repositories.ListAll(context.Background(), opt)
 	if err != nil {
-
-		return err
+		return nil, err
 	}
 
-	for _, repo := range repos {
-		err = models.StoreRepo(repo)
-		if err != nil {
-
-			return err
-		}
-	}
-
-	return nil
+	// TODO: 分页处理
+	return repos, nil
 }
