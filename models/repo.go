@@ -66,48 +66,48 @@ func PrepareGitRepos() {
 
 type Repos struct {
 	ID              bson.ObjectId     `bson:"_id,omitempty",json:"id"`
-	RepoID          uint64            `bson:"RepoID,omitempty" json:"repoid,omitempty"`
+	RepoID          *int              `bson:"RepoID,omitempty" json:"repoid,omitempty"`
 	Owner           bson.ObjectId     `bson:"Owner,omitempty" json:"-"`
-	Name            string            `bson:"Name,omitempty" json:"name"`
-	FullName        string            `bson:"FullName,omitempty" json:"fullname"`
-	Description     string            `bson:"Description,omitempty" json:"description"`
-	DefaultBranch   string            `bson:"DefaultBranch,omitempty" json:"defaultbranch"`
-	Language        string            `bson:"Language,omitempty" json:"language"`
+	Name            *string           `bson:"Name,omitempty" json:"name"`
+	FullName        *string           `bson:"FullName,omitempty" json:"fullname"`
+	Description     *string           `bson:"Description,omitempty" json:"description"`
+	DefaultBranch   *string           `bson:"DefaultBranch,omitempty" json:"defaultbranch"`
+	Language        *string           `bson:"Language,omitempty" json:"language"`
 	Created         *github.Timestamp `bson:"Created,omitempty" json:"created"`
 	Updated         *github.Timestamp `bson:"Updated,omitempty" json:"updated"`
 	Pushed          *github.Timestamp `bson:"Pushed,omitempty" json:"pushed"`
-	HasWiki         bool              `bson:"HasWiki,omitempty" json:"haswiki"`
-	HasIssues       bool              `bson:"HasIssues,omitempty" json:"hasissues"`
-	HasDownloads    bool              `bson:"HasDownloads,omitempty" json:"hasdownloads"`
-	ForkCount       uint64            `bson:"ForkCount,omitempty" json:"forkcount"`
-	StarCount       uint64            `bson:"StarCount,omitempty" json:"starcount"`
-	WatchersCounts  uint64            `bson:"WatchersCounts,omitempty" json:"watcherscounts"`
-	OpenIssuesCount uint64            `bson:"OpenIssuesCount,omitempty" json:"openissuescount"`
-	Size            uint64            `bson:"Size,omitempty" json:"size"`
+	HasWiki         *bool             `bson:"HasWiki,omitempty" json:"haswiki"`
+	HasIssues       *bool             `bson:"HasIssues,omitempty" json:"hasissues"`
+	HasDownloads    *bool             `bson:"HasDownloads,omitempty" json:"hasdownloads"`
+	ForkCount       *int              `bson:"ForkCount,omitempty" json:"forkcount"`
+	StarCount       *int              `bson:"StarCount,omitempty" json:"starcount"`
+	WatchersCounts  *int              `bson:"WatchersCounts,omitempty" json:"watcherscounts"`
+	OpenIssuesCount *int              `bson:"OpenIssuesCount,omitempty" json:"openissuescount"`
+	Size            *int              `bson:"Size,omitempty" json:"size"`
 }
 
 // 存储库信息及作者在 User 数据库中的 ID
-func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *string) error {
+func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner string) error {
 	r := Repos{
 		ID:              bson.NewObjectId(),
-		RepoID:          uint64(repos.ID),
-		Owner:           bson.ObjectIdHex(string(owner)),
-		Name:            string(repos.Name),
-		FullName:        string(repos.FullName),
-		Description:     string(repos.Description),
-		DefaultBranch:   string(repos.DefaultBranch),
-		Language:        string(repos.Language),
+		RepoID:          repos.ID,
+		Owner:           bson.ObjectIdHex(owner),
+		Name:            repos.Name,
+		FullName:        repos.FullName,
+		Description:     repos.Description,
+		DefaultBranch:   repos.DefaultBranch,
+		Language:        repos.Language,
 		Created:         repos.CreatedAt,
 		Updated:         repos.UpdatedAt,
 		Pushed:          repos.PushedAt,
-		HasWiki:         bool(repos.HasWiki),
-		HasIssues:       bool(repos.HasIssues),
-		HasDownloads:    bool(repos.HasDownloads),
-		ForkCount:       uint64(repos.ForksCount),
-		StarCount:       uint64(repos.StargazersCount),
-		WatchersCounts:  uint64(repos.WatchersCount),
-		OpenIssuesCount: uint64(repos.OpenIssuesCount),
-		Size:            uint64(repos.Size),
+		HasWiki:         repos.HasWiki,
+		HasIssues:       repos.HasIssues,
+		HasDownloads:    repos.HasDownloads,
+		ForkCount:       repos.ForksCount,
+		StarCount:       repos.StargazersCount,
+		WatchersCounts:  repos.WatchersCount,
+		OpenIssuesCount: repos.OpenIssuesCount,
+		Size:            repos.Size,
 	}
 
 	err := GitReposCollection.Insert(&r)
@@ -122,13 +122,13 @@ func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *stri
 func StoreRepo(repo *github.Repository) (err error) {
 	// fork 的库不保存
 	// TODO: 此处的逻辑判断拿到外面，数据库中不保存 fork 的库，考虑如何处理
-	if repo.Fork {
+	if *repo.Fork {
 		err = errors.New("this repos is forked from others")
 		return err
 	}
 
 	// 判断数据库中是否有此作者信息
-	oldUserID, err := GitUserService.GetUserID(string(repo.Owner.Name))
+	oldUserID, err := GitUserService.GetUserID(repo.Owner.Name)
 	if err != nil {
 		if err != mgo.ErrNotFound {
 			return err
@@ -140,14 +140,14 @@ func StoreRepo(repo *github.Repository) (err error) {
 			return err
 		}
 
-		err = GitReposService.Create(repo, &newUserID)
+		err = GitReposService.Create(repo, newUserID)
 		if err != nil {
 			return err
 		}
 	}
 
 	// User 数据库中有此作者信息
-	err = GitReposService.Create(repo, &oldUserID)
+	err = GitReposService.Create(repo, oldUserID)
 	if err != nil {
 		return err
 	}
