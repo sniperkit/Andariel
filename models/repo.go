@@ -112,7 +112,6 @@ func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *stri
 
 	err := GitReposCollection.Insert(&r)
 	if err != nil {
-
 		return err
 	}
 
@@ -122,9 +121,9 @@ func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *stri
 // 逻辑判断后，存储库信息到数据库
 func StoreRepo(repo *github.Repository) (err error) {
 	// fork 的库不保存
+	// TODO: 此处的逻辑判断拿到外面，数据库中不保存 fork 的库，考虑如何处理
 	if repo.Fork {
 		err = errors.New("this repos is forked from others")
-
 		return err
 	}
 
@@ -132,20 +131,17 @@ func StoreRepo(repo *github.Repository) (err error) {
 	oldUserID, err := GitUserService.GetUserID(string(repo.Owner.Name))
 	if err != nil {
 		if err != mgo.ErrNotFound {
-
 			return err
 		}
 
 		// User 数据库中无此作者信息
 		newUserID, err := GitUserService.Create(repo.Owner)
 		if err != nil {
-
 			return err
 		}
 
 		err = GitReposService.Create(repo, &newUserID)
 		if err != nil {
-
 			return err
 		}
 	}
@@ -153,7 +149,6 @@ func StoreRepo(repo *github.Repository) (err error) {
 	// User 数据库中有此作者信息
 	err = GitReposService.Create(repo, &oldUserID)
 	if err != nil {
-
 		return err
 	}
 
