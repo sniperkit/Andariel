@@ -64,25 +64,25 @@ func PrepareGitUser() {
 // GitHub 用户数据结构
 type User struct {
 	UserID            bson.ObjectId     `bson:"_id,omitempty" json:"id"`
-	ID                uint64            `bson:"ID,omitempty" json:"userid"`
-	HTMLURL           string            `bson:"HTMLURL,omitempty" json:"htmlurl"`
-	Name              string            `bson:"Name,omitempty" json:"name"`
-	Email             string            `bson:"Email,omitempty" json:"email"`
-	PublicRepos       uint64            `bson:"PublicRepos,omitempty" json:"publicrepos"`
-	PublicGists       uint64            `bson:"PublicGists,omitempty" json:"publicgists"`
-	Followers         uint64            `bson:"Followers,omitempty" json:"followers"`
-	Following         uint64            `bson:"Following,omitempty" json:"following"`
+	ID                *int              `bson:"ID,omitempty" json:"userid"`
+	HTMLURL           *string           `bson:"HTMLURL,omitempty" json:"htmlurl"`
+	Name              *string           `bson:"Name,omitempty" json:"name"`
+	Email             *string           `bson:"Email,omitempty" json:"email"`
+	PublicRepos       *int              `bson:"PublicRepos,omitempty" json:"publicrepos"`
+	PublicGists       *int              `bson:"PublicGists,omitempty" json:"publicgists"`
+	Followers         *int              `bson:"Followers,omitempty" json:"followers"`
+	Following         *int              `bson:"Following,omitempty" json:"following"`
 	CreatedAt         *github.Timestamp `bson:"CreatedAt,omitempty" json:"created"`
 	UpdatedAt         *github.Timestamp `bson:"UpdatedAt,omitempty" json:"updated"`
 	SuspendedAt       *github.Timestamp `bson:"SuspendedAt,omitempty" json:"suspended"`
-	Type              string            `bson:"Type,omitempty" json:"type"`
-	TotalPrivateRepos uint64            `bson:"TotalPrivateRepos,omitempty" json:"totalprivaterepos"`
-	OwnedPrivateRepos uint64            `bson:"OwnedPrivateRepos,omitempty" json:"ownedprivaterepos"`
-	PrivateGists      uint64            `bson:"PrivateGists,omitempty" json:"privategists"`
+	Type              *string           `bson:"Type,omitempty" json:"type"`
+	TotalPrivateRepos *int              `bson:"TotalPrivateRepos,omitempty" json:"totalprivaterepos"`
+	OwnedPrivateRepos *int              `bson:"OwnedPrivateRepos,omitempty" json:"ownedprivaterepos"`
+	PrivateGists      *int              `bson:"PrivateGists,omitempty" json:"privategists"`
 }
 
 // 查询作者信息
-func (usp *GitUserServiceProvider) GetUserByID(userID uint64) (User, error) {
+func (usp *GitUserServiceProvider) GetUserByID(userID *int) (*User, error) {
 	var u User
 
 	err := GitUserCollection.Find(bson.M{"ID": userID}).One(&u)
@@ -90,11 +90,11 @@ func (usp *GitUserServiceProvider) GetUserByID(userID uint64) (User, error) {
 		return nil, err
 	}
 
-	return u, nil
+	return &u, nil
 }
 
 // 通过 name 获取作者在数据库中的 _id
-func (usp *GitUserServiceProvider) GetUserID(name string) (string, error) {
+func (usp *GitUserServiceProvider) GetUserID(name *string) (string, error) {
 	var u User
 
 	err := GitUserCollection.Find(bson.M{"Name": name}).One(&u)
@@ -106,7 +106,7 @@ func (usp *GitUserServiceProvider) GetUserID(name string) (string, error) {
 }
 
 // 通过 name 判断作者是否存在数据库中
-func (usp *GitUserServiceProvider) IsUserExists(name string) bool {
+func (usp *GitUserServiceProvider) IsUserExists(name *string) bool {
 	uID, _ := usp.GetUserID(name)
 
 	return uID != ""
@@ -116,26 +116,26 @@ func (usp *GitUserServiceProvider) IsUserExists(name string) bool {
 func (usp *GitUserServiceProvider) Create(user *github.User) (string, error) {
 	u := User{
 		UserID:            bson.NewObjectId(),
-		ID:                uint64(user.ID),
-		HTMLURL:           string(user.HTMLURL),
-		Name:              string(user.Name),
-		Email:             string(user.Email),
-		PublicRepos:       uint64(user.PublicRepos),
-		PublicGists:       uint64(user.PublicGists),
-		Followers:         uint64(user.Followers),
-		Following:         uint64(user.Following),
+		ID:                user.ID,
+		HTMLURL:           user.HTMLURL,
+		Name:              user.Name,
+		Email:             user.Email,
+		PublicRepos:       user.PublicRepos,
+		PublicGists:       user.PublicGists,
+		Followers:         user.Followers,
+		Following:         user.Following,
 		CreatedAt:         user.CreatedAt,
 		UpdatedAt:         user.UpdatedAt,
 		SuspendedAt:       user.SuspendedAt,
-		Type:              string(user.Type),
-		TotalPrivateRepos: uint64(user.TotalPrivateRepos),
-		OwnedPrivateRepos: uint64(user.OwnedPrivateRepos),
-		PrivateGists:      uint64(user.PrivateGists),
+		Type:              user.Type,
+		TotalPrivateRepos: user.TotalPrivateRepos,
+		OwnedPrivateRepos: user.OwnedPrivateRepos,
+		PrivateGists:      user.PrivateGists,
 	}
 
 	err := GitUserCollection.Insert(&u)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	return u.UserID.Hex(), nil
