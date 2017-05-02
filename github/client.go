@@ -53,6 +53,12 @@ const (
 	nonAuthNonSearchLimit 	= 60
 	authSearchLimit	   		= 30 	//per minutes
 	nonAuthSearchLimit 		= 10
+
+	authClient				= 0x01
+	nonAuthClient			= 0x10
+
+	core					= "core"
+	search 					= "search"
 )
 
 type GithubClient struct {
@@ -60,23 +66,39 @@ type GithubClient struct {
 	StartAt     time.Time
 	LimitAt     time.Time
 	RequestTime time.Duration
-	Timer       time.Duration
-	Limited     bool
-	Times       int
-	Left        int
+	ClientType  int
+	Core 		Rate
+	Search 		Rate
+}
+
+type Rate struct {
+	Times		int
+	Limit 		int
+	Left 		int
+	Limited 	bool
+	Reset 		time.Time
+	ResetIn 	time.Duration
 }
 
 var GitClient *GithubClient = new(GithubClient)
 
 func newClient(token string) (client *GithubClient) {
-	client = new(GithubClient)
-	client.init(token)
+	if token == "" {
+		client = new(GithubClient)
+		tokenSource := *new(oauth2.TokenSource)
+		client.ClientType = nonAuthClient
+		client.init(tokenSource)
+	} else {
+		client = new(GithubClient)
+		tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+		client.ClientType = authClient
+		client.init(tokenSource)
+	}
 
 	return client
 }
 
-func (this *GithubClient) init(token string) {
-	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+func (this *GithubClient) init(tokenSource oauth2.TokenSource) {
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
 	client := github.NewClient(httpClient)
 	this.Client = client
@@ -92,8 +114,14 @@ func (this *GithubClient) init(token string) {
 	}
 }
 
-func (this *GithubClient) checkLimit() bool {
-	return this.Limited
+func (this *GithubClient) checkLimit(limit string) bool {
+	switch {
+	case limit == search:
+		return this.Search.Limited
+	default:
+		return this.Core.Limited
+	}
+
 }
 
 func (this *GithubClient) onErr() error {
@@ -101,9 +129,9 @@ func (this *GithubClient) onErr() error {
 	if s, ok := err.(*github.RateLimitError); ok {
 		reset := this.StartAt.Add(time.Hour * 1)
 		this.LimitAt = time.Now()
-		this.Limited = true
+		this.Core.Limited = true
 		this.RequestTime = this.LimitAt.Sub(this.StartAt)
-		this.Timer = reset.Sub(this.LimitAt)
+		this.Core.ResetIn = reset.Sub(this.LimitAt)
 		e := github.RateLimitError.Error(*s)
 		return errors.New(e)
 	}
@@ -111,10 +139,25 @@ func (this *GithubClient) onErr() error {
 	return nil
 }
 
-func (this *GithubClient) reset() {
-	this.Times = empty
-	this.Left = authNonSearchLimit
-	this.Limited = false
+func (this *GithubClient) reset(limit string) {
+	switch {
+	case limit == search:
+		if this.ClientType == authClient {
+			this.Search.Left = authSearchLimit
+		} else {
+			this.Search.Left = nonAuthSearchLimit
+		}
+		this.Search.Times = empty
+		this.Search.Limited = false
+	default:
+		if this.ClientType == authClient {
+			this.Core.Left = authNonSearchLimit
+		} else {
+			this.Core.Left = nonAuthNonSearchLimit
+		}
+		this.Core.Times = empty
+		this.Core.Limited = false
+	}
 }
 
 func (this *GithubClient) requestTimes() (error, bool) {
@@ -122,10 +165,13 @@ func (this *GithubClient) requestTimes() (error, bool) {
 	if err != nil {
 		return err, false
 	}
-	this.Times = rate.Core.Limit - rate.Core.Remaining
-	this.Left = rate.Core.Remaining
+	this.Core.Times = rate.Core.Limit - rate.Core.Remaining
+	this.Core.Left = rate.Core.Remaining
+	this.Core.Reset = time.Time(rate.Core.Reset)
+	this.Core.ResetIn = rate.Core.Reset.Sub(time.Now())
 
-	if this.Left != authNonSearchLimit- 1 {
+
+	if this.Core.Left != authNonSearchLimit- 1 {
 		return nil, false
 	}
 
@@ -134,9 +180,15 @@ func (this *GithubClient) requestTimes() (error, bool) {
 
 func (this *GithubClient) monitor() {
 	for {
-		if this.Left == empty {
-			if this.Timer == empty {
-				this.reset()
+		this.onErr()
+		if this.Core.Left == empty {
+			if this.Core.ResetIn == empty {
+				this.reset(core)
+			}
+		}
+		if this.Search.Left == empty {
+			if this.Search.ResetIn == empty{
+				this.reset(search)
 			}
 		}
 	}
