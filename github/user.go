@@ -32,33 +32,39 @@ package github
 import (
 	"context"
 
+	"github.com/google/go-github/github"
+
 	"Andariel/models"
 )
 
 // 调用 API 获取作者信息
-func GetOwnerByID(ownerID int) (*models.User, error) {
-	owner, _, err := GitClient.Client.Users.GetByID(context.Background(), ownerID)
+func GetOwnerByID(ownerID int) (*models.User, *github.Response, error) {
+	owner, resp, err := GitClient.Client.Users.GetByID(context.Background(), ownerID)
 	if err != nil {
-		return nil, err
+		if resp == nil {
+			return nil, nil, err
+		}
+
+		return nil, resp, err
 	}
 
 	user := &models.User{
-		ID:                uint64(owner.ID),
-		HTMLURL:           string(owner.HTMLURL),
-		Name:              string(owner.Name),
-		Email:             string(owner.Email),
-		PublicRepos:       uint64(owner.PublicRepos),
-		PublicGists:       uint64(owner.PublicGists),
-		Followers:         uint64(owner.Followers),
-		Following:         uint64(owner.Following),
+		ID:                owner.ID,
+		HTMLURL:           owner.HTMLURL,
+		Name:              owner.Name,
+		Email:             owner.Email,
+		PublicRepos:       owner.PublicRepos,
+		PublicGists:       owner.PublicGists,
+		Followers:         owner.Followers,
+		Following:         owner.Following,
 		CreatedAt:         owner.CreatedAt,
 		UpdatedAt:         owner.UpdatedAt,
 		SuspendedAt:       owner.SuspendedAt,
-		Type:              string(owner.Type),
-		TotalPrivateRepos: uint64(owner.TotalPrivateRepos),
-		OwnedPrivateRepos: uint64(owner.OwnedPrivateRepos),
-		PrivateGists:      uint64(owner.PrivateGists),
+		Type:              owner.Type,
+		TotalPrivateRepos: owner.TotalPrivateRepos,
+		OwnedPrivateRepos: owner.OwnedPrivateRepos,
+		PrivateGists:      owner.PrivateGists,
 	}
 
-	return user, nil
+	return user, resp, nil
 }
