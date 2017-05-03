@@ -35,7 +35,7 @@ import (
 	"github.com/google/go-github/github"
 )
 
-// 根据库 ID 调用 API 获取库信息
+// GetRepoByID 根据库 ID 调用 github API 获取库信息
 func GetRepoByID(repoID int) (*github.Repository, *github.Response, error) {
 	repo, resp, err := GitClient.Client.Repositories.GetByID(context.Background(), repoID)
 	if err != nil {
@@ -49,18 +49,37 @@ func GetRepoByID(repoID int) (*github.Repository, *github.Response, error) {
 	return repo, resp, nil
 }
 
-// 调用 API 获取所有库信息
+// GetAllRepos 调用  github API 获取所有库信息
 // 参数 opt 指定本次要获取多少个库，将获取的库分多少页，每页包含多少个库（最高 100 个）
+// For example:
+//
+//	opt := &github.RepositoryListAllOptions{
+//		ListOptions: github.ListOptions{PerPage: 10},
+//	}
 func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, *github.Response, error) {
-	repos, resp, err := GitClient.Client.Repositories.ListAll(context.Background(), opt)
-	if err != nil {
-		if resp == nil {
-			return nil, nil, err
+	var (
+		allRepos []*github.Repository
+		resp     *github.Response
+	)
+
+	for {
+		repos, resp, err := GitClient.Client.Repositories.ListAll(context.Background(), opt)
+		if err != nil {
+			if resp == nil {
+				return nil, nil, err
+			}
+
+			return nil, resp, err
 		}
 
-		return nil, resp, err
+		allRepos = append(allRepos, repos...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+
+		opt.ListOptions.Page = resp.NextPage
 	}
 
-	// TODO: 分页处理
-	return repos, resp, nil
+	return allRepos, resp, nil
 }
