@@ -80,7 +80,7 @@ type Rate struct {
 	ResetIn 	time.Duration
 }
 
-var GitClient *GithubClient = new(GithubClient)
+var GitClient *GithubClient = newClient("")
 
 func newClient(token string) (client *GithubClient) {
 	if token == "" {
@@ -132,8 +132,8 @@ func (this *GithubClient) onErr() error {
 		this.Core.Limited = true
 		this.RequestTime = this.LimitAt.Sub(this.StartAt)
 		this.Core.ResetIn = reset.Sub(this.LimitAt)
-		e := github.RateLimitError.Error(*s)
-		return errors.New(e)
+		e := (github.RateLimitError)(*s)
+		return errors.New(e.Message)
 	}
 
 	return nil
@@ -167,7 +167,7 @@ func (this *GithubClient) requestTimes() (error, bool) {
 	}
 	this.Core.Times = rate.Core.Limit - rate.Core.Remaining
 	this.Core.Left = rate.Core.Remaining
-	this.Core.Reset = time.Time(rate.Core.Reset)
+	this.Core.Reset = rate.Core.Reset.Time
 	this.Core.ResetIn = rate.Core.Reset.Sub(time.Now())
 
 
