@@ -90,9 +90,10 @@ func (this *Server) NewWorker() (Worker, error) {
 	var t Task
 
 	c := this.taskSession.DB(MDbName).C(MDColl)
-	err := c.Find(bson.M{}).One(&t)
+	c.Find(bson.M{}).One(&t)
+	c.RemoveId(t.Id)
 
-	if err != nil {
+	if t.Type == 0 {
 		return nil, ErrNoTask
 	}
 
@@ -105,10 +106,8 @@ func (this *Server) NewWorker() (Worker, error) {
 		w := Worker{
 			s:         this,
 			t:         t,
-			h:         this.mux[t.Type],
+			h:         this.mux[int(t.Type)],
 		}
-
-		c.RemoveId(t.Id)
 
 		return w, nil
 	}

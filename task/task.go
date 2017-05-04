@@ -37,8 +37,6 @@ import (
 type Task struct {
 	Id       bson.ObjectId   `bson:"_id,omitempty"`
 	Type     uint16          `bson:"type"`
-	RepoId   uint64          `bson:"repoid"`
-	RepoName string          `bson:"reponame"`
-	Lang     string          `bson:"lang"`
+	Param    interface{}     `bson:"param"`
 	Date     time.Time       `bson:"date"`
 }
