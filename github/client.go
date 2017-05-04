@@ -37,6 +37,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"time"
+	"net/http"
 )
 
 var logger *log.AndarielLogger = log.AndarielCreateLogger(
@@ -59,6 +60,8 @@ const (
 
 	core					= "core"
 	search 					= "search"
+
+	invalidTokenErr 		= "401 Unauthorized"
 )
 
 type GithubClient struct {
@@ -102,6 +105,10 @@ func (this *GithubClient) init(tokenSource oauth2.TokenSource) {
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
 	client := github.NewClient(httpClient)
 	this.Client = client
+	if this.isValidToken(httpClient) {
+		logger.Debug("Invalid token.")
+		return
+	}
 	err, ok := this.requestTimes()
 
 	if err != nil {
@@ -158,6 +165,26 @@ func (this *GithubClient) reset(limit string) {
 		this.Core.Times = empty
 		this.Core.Limited = false
 	}
+}
+
+func (this *GithubClient) isValidToken(c *http.Client) bool {
+	req, err := this.Client.NewRequest("GET", "", nil)
+	if err != nil {
+		logger.Error("crash with:", err)
+		return false
+	}
+
+	resp, err := c.Do(req)
+	if err != nil {
+		logger.Error("crash with:", err)
+		return false
+	}
+
+	if resp.Header.Get("Status") == invalidTokenErr {
+		return true
+	}
+
+	return false
 }
 
 func (this *GithubClient) requestTimes() (error, bool) {
