@@ -48,7 +48,7 @@ var GitUserCollection *mgo.Collection
 func PrepareGitUser() {
 	GitUserCollection = mongo.GithubSession.DB(mongo.MDGitName).C("gitUser")
 	userIndex := mgo.Index{
-		Key:        []string{"Name"},
+		Key:        []string{"Login"},
 		Unique:     true,
 		Background: true,
 		Sparse:     true,
@@ -64,6 +64,7 @@ func PrepareGitUser() {
 // GitHub 用户数据结构
 type User struct {
 	UserID            bson.ObjectId     `bson:"_id,omitempty" json:"id"`
+	Login             *string           `bson:"Login,omitempty" json:"login"`
 	ID                *int              `bson:"ID,omitempty" json:"userid"`
 	HTMLURL           *string           `bson:"HTMLURL,omitempty" json:"htmlurl"`
 	Name              *string           `bson:"Name,omitempty" json:"name"`
@@ -93,11 +94,11 @@ func (usp *GitUserServiceProvider) GetUserByID(userID *int) (*User, error) {
 	return &u, nil
 }
 
-// 通过 name 获取作者在数据库中的 _id
-func (usp *GitUserServiceProvider) GetUserID(name *string) (string, error) {
+// 通过 login 获取作者在数据库中的 _id
+func (usp *GitUserServiceProvider) GetUserID(login *string) (string, error) {
 	var u User
 
-	err := GitUserCollection.Find(bson.M{"Name": name}).One(&u)
+	err := GitUserCollection.Find(bson.M{"Login": login}).One(&u)
 	if err != nil {
 		return "", err
 	}
@@ -105,17 +106,10 @@ func (usp *GitUserServiceProvider) GetUserID(name *string) (string, error) {
 	return u.UserID.Hex(), nil
 }
 
-// 通过 name 判断作者是否存在数据库中
-func (usp *GitUserServiceProvider) IsUserExists(name *string) bool {
-	uID, _ := usp.GetUserID(name)
-
-	return uID != ""
-}
-
 // 存储作者信息
 func (usp *GitUserServiceProvider) Create(user *github.User) (string, error) {
 	u := User{
-		UserID:            bson.NewObjectId(),
+		Login:             user.Login,
 		ID:                user.ID,
 		HTMLURL:           user.HTMLURL,
 		Name:              user.Name,
@@ -133,7 +127,7 @@ func (usp *GitUserServiceProvider) Create(user *github.User) (string, error) {
 		PrivateGists:      user.PrivateGists,
 	}
 
-	err := GitUserCollection.Insert(&u)
+	_, err := GitUserCollection.Upsert(bson.M{"Login": user.Login}, &u)
 	if err != nil {
 		return "", err
 	}

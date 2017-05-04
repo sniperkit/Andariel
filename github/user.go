@@ -49,6 +49,7 @@ func GetOwnerByID(ownerID int) (*models.User, *github.Response, error) {
 	}
 
 	user := &models.User{
+		Login:             owner.Login,
 		ID:                owner.ID,
 		HTMLURL:           owner.HTMLURL,
 		Name:              owner.Name,
