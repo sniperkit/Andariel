@@ -65,7 +65,7 @@ func PrepareGitRepos() {
 type Repos struct {
 	ID              bson.ObjectId     `bson:"_id,omitempty",json:"id"`
 	RepoID          *int              `bson:"RepoID,omitempty" json:"repoid,omitempty"`
-	Owner           bson.ObjectId     `bson:"Owner,omitempty" json:"-"`
+	Owner           *string           `bson:"Owner,omitempty" json:"-"`
 	Name            *string           `bson:"Name,omitempty" json:"name"`
 	FullName        *string           `bson:"FullName,omitempty" json:"fullname"`
 	Description     *string           `bson:"Description,omitempty" json:"description"`
@@ -85,11 +85,10 @@ type Repos struct {
 }
 
 // 存储库信息及作者在 User 数据库中的 ID
-func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner string) error {
+func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *string) error {
 	r := Repos{
-		ID:              bson.NewObjectId(),
 		RepoID:          repos.ID,
-		Owner:           bson.ObjectIdHex(owner),
+		Owner:           owner,
 		Name:            repos.Name,
 		FullName:        repos.FullName,
 		Description:     repos.Description,
@@ -108,7 +107,7 @@ func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner strin
 		Size:            repos.Size,
 	}
 
-	err := GitReposCollection.Insert(&r)
+	_, err := GitReposCollection.Upsert(bson.M{"RepoID": repos.ID}, &r)
 	if err != nil {
 		return err
 	}
@@ -119,7 +118,7 @@ func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner strin
 // 逻辑判断后，存储库信息到数据库
 func StoreRepo(repo *github.Repository) error {
 	// 判断数据库中是否有此作者信息
-	oldUserID, err := GitUserService.GetUserID(repo.Owner.Name)
+	oldUserID, err := GitUserService.GetUserID(repo.Owner.Login)
 	if err != nil {
 		if err != mgo.ErrNotFound {
 			return err
@@ -131,14 +130,14 @@ func StoreRepo(repo *github.Repository) error {
 			return err
 		}
 
-		err = GitReposService.Create(repo, newUserID)
+		err = GitReposService.Create(repo, &newUserID)
 		if err != nil {
 			return err
 		}
 	}
 
 	// User 数据库中有此作者信息
-	err = GitReposService.Create(repo, oldUserID)
+	err = GitReposService.Create(repo, &oldUserID)
 	if err != nil {
 		return err
 	}
