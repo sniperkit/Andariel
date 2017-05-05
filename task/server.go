@@ -31,47 +31,42 @@ package task
 
 import (
 	"errors"
-	"gopkg.in/mgo.v2"
 	"time"
-	"gopkg.in/mgo.v2/bson"
 	"sync"
 )
 
 var (
 	ErrHandlerExists = errors.New("This type handler is exists!")
 	ErrMaxWorker     = errors.New("Max worker!")
-	ErrNoTask        = errors.New("There is no task!")
 )
 
 type Handler func(t Task) error
 
+type ServerOption struct {
+	Workersize  uint32
+	queueengine QueueEngine
+}
+
 type Server struct {
 	mutex       sync.RWMutex
-	workersize  uint32
 	cursize     uint32
 	regularchan chan struct{}
 	notifychan  chan struct{}
-	taskSession *mgo.Session
 	mux         map[int]Handler
+	option      ServerOption
 }
 
-func NewServer(url string, size uint32) (*Server, error) {
-	Session, err := mgo.DialWithTimeout(url, 5 * time.Second)
-
-	if err != nil {
-		return nil, err
-	}
+func NewServer(option ServerOption) *Server {
 
 	s := Server{
-		workersize:       size,
-		cursize:          0,
-		regularchan:      make(chan struct{}),
-		notifychan:       make(chan struct{}),
-		taskSession:      Session,
-		mux:              make(map[int]Handler),
+		cursize:         0,
+		regularchan:     make(chan struct{}),
+		notifychan:      make(chan struct{}),
+		mux:             make(map[int]Handler),
+		option:          option,
 	}
 
-	return &s, nil
+	return &s
 }
 
 func (this *Server) Register(t int, h Handler) error {
@@ -87,32 +82,36 @@ func (this *Server) Register(t int, h Handler) error {
 }
 
 func (this *Server) NewWorker() (Worker, error) {
-	var t Task
-
-	c := this.taskSession.DB(MDbName).C(MDColl)
-	c.Find(bson.M{}).One(&t)
-	c.RemoveId(t.Id)
-
-	if t.Type == 0 {
-		return nil, ErrNoTask
-	}
+	var w Worker
 
 	this.mutex.Lock()
 	defer this.mutex.Unlock()
 
-	if this.cursize < this.workersize {
+	t, err := this.option.queueengine.FetchTask()
+
+	if err != nil {
+		return w, err
+	}
+
+	if this.cursize < this.option.Workersize {
+		err = this.option.queueengine.DelTask(t.Id)
+
+		if err != nil {
+			return w, err
+		}
+
 		this.cursize++
 
-		w := Worker{
+		w = Worker{
 			s:         this,
-			t:         t,
+			t:         *t,
 			h:         this.mux[int(t.Type)],
 		}
 
 		return w, nil
 	}
 
-	return nil, ErrMaxWorker
+	return w, ErrMaxWorker
 }
 
 func (this *Server) Notify() {
