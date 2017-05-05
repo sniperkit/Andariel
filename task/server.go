@@ -31,8 +31,8 @@ package task
 
 import (
 	"errors"
-	"time"
 	"sync"
+	"time"
 )
 
 // 定义错误类型
@@ -42,33 +42,38 @@ var (
 )
 
 // 定义处理方法类型
-type Handler func(t Task) error
+type Handler func(t *Task) error
 
 // Server 配置参数
 type ServerOption struct {
-	Workersize  uint32
-	queueengine QueueEngine
+	queueEngine QueueEngine
+	WorkerSize  uint32
 }
 
 // Server 结构
 type Server struct {
-	mutex       sync.RWMutex
-	cursize     uint32
-	regularchan chan struct{}
-	notifychan  chan struct{}
+	lock        sync.RWMutex
 	mux         map[int]Handler
-	option      ServerOption
+
+	distChan    chan chan Task
+    resultChan  chan Result
+
+	option      *ServerOption
 }
 
 // 创建 Server
-func NewServer(option ServerOption) *Server {
-
+func NewServer(option *ServerOption) *Server {
 	s := Server{
-		cursize:         0,
-		regularchan:     make(chan struct{}),
-		notifychan:      make(chan struct{}),
+		distChan:        make(chan chan Task),
 		mux:             make(map[int]Handler),
 		option:          option,
+	}
+
+	for i := uint32(0); i < option.WorkerSize; i++ {
+		_ = Worker{
+			server:   &s,
+			tchan:    make(chan Task),
+		}
 	}
 
 	return &s
@@ -76,6 +81,8 @@ func NewServer(option ServerOption) *Server {
 
 // 注册 type 对应处理方法
 func (this *Server) Register(t int, h Handler) error {
+	this.lock.Lock()
+	defer this.lock.Unlock()
 	_, ok := this.mux[t]
 
 	if !ok {
@@ -87,68 +94,35 @@ func (this *Server) Register(t int, h Handler) error {
 	return ErrHandlerExists
 }
 
-// 创建人物执行者
-func (this *Server) NewWorker() (Worker, error) {
-	var w Worker
-
-	this.mutex.Lock()
-	defer this.mutex.Unlock()
-
-	t, err := this.option.queueengine.FetchTask()
-
-	if err != nil {
-		return w, err
-	}
-
-	if this.cursize < this.option.Workersize {
-		err = this.option.queueengine.DelTask(t.Id)
-
-		if err != nil {
-			return w, err
-		}
-
-		this.cursize++
-
-		w = Worker{
-			s:         this,
-			t:         *t,
-			h:         this.mux[int(t.Type)],
-		}
-
-		return w, nil
-	}
-
-	return w, ErrMaxWorker
+func (this *Server) FetchTasks() ([]Task, error) {
+	return this.option.queueEngine.FetchTasks(this.option.WorkerSize)
 }
 
-// 通知有新的任务
-func (this *Server) Notify() {
-	this.notifychan <- struct {}{}
+func (this *Server) DelTask(id interface{}) error {
+	return this.option.queueEngine.DelTask(id)
 }
 
 // 启动 Server
 func (this *Server) Start() {
-	go func() {
-		for {
-			time.Sleep(3 * time.Second)
-			this.regularchan <- struct {}{}
+	for {
+		tasks, err := this.FetchTasks()
+
+		if err != nil {
+			time.Sleep(time.Second)
+
+			tasks, err = this.FetchTasks()
 		}
 
-	}()
+		for i := uint32(0); i < this.option.WorkerSize; {
+			select {
+			case tchan := <-this.distChan:
+				tchan <- tasks[i]
 
-	for {
-		select {
-		case <- this.notifychan:
-			w, err := this.NewWorker()
-
-			if err == nil {
-				w.Run()
-			}
-		case <- this.regularchan:
-			w, err := this.NewWorker()
-
-			if err == nil {
-				w.Run()
+				i++
+			case result := <- this.resultChan:
+				if result.IsWorked == true {
+					this.DelTask(result.Id)
+				}
 			}
 		}
 	}

@@ -9,17 +9,17 @@ type MgoQueueEngine struct {
 	Sess	*mgo.Session
 }
 
-func (this *MgoQueueEngine) FetchTask() (*Task, error) {
-	var ta Task
+func (this *MgoQueueEngine) FetchTasks(n uint32) ([]Task, error) {
+	var ta []Task
 
 	c := this.Sess.DB(MDbName).C(MDColl)
-	err := c.Find(bson.M{}).One(&ta)
+	err := c.Find(bson.M{}).Limit(n).All(ta)
 
 	if err != nil {
-		return &ta, err
+		return ta, err
 	}
 
-	return &ta, nil
+	return ta, nil
 }
 
 func (this *MgoQueueEngine) DelTask(id interface{}) error {

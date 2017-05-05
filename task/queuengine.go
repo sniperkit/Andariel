@@ -1,6 +1,6 @@
 package task
 
 type QueueEngine interface {
-	FetchTask() (*Task, error)
+	FetchTasks(n uint32) ([]Task, error)
 	DelTask(id interface{}) error
 }

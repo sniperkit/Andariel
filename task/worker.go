@@ -30,19 +30,29 @@
 
 package task
 
+import "fmt"
+
 type Worker struct {
-    s      *Server
-    t      Task
-    h      Handler
+    server      *Server
+    tchan       chan Task
+    task        Task
 }
 
 func (this *Worker) Run() {
     go func() {
-        this.h(this.t)
+        for {
+            this.task = <- this.tchan
+            handler, ok := this.server.mux[int(this.task.Type)]
 
-        this.s.mutex.Lock()
-        defer this.s.mutex.Unlock()
+            if ok {
+                err := handler(&this.task)
 
-        this.s.cursize--
+                if err != nil {
+                    fmt.Println("[ERROR]:", this.task.Id, " Handler err")
+                } else {
+                    // TODO: 告诉 Server 这个任务执行失败。
+                }
+            }
+        }
     }()
 }

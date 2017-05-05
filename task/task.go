@@ -40,3 +40,8 @@ type Task struct {
 	Param    interface{}     `bson:"param"`
 	Date     time.Time       `bson:"date"`
 }
+
+type Result struct {
+	IsWorked   bool
+	Id         bson.ObjectId
+}
