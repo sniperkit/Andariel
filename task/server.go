@@ -35,18 +35,22 @@ import (
 	"sync"
 )
 
+// 定义错误类型
 var (
 	ErrHandlerExists = errors.New("This type handler is exists!")
 	ErrMaxWorker     = errors.New("Max worker!")
 )
 
+// 定义处理方法类型
 type Handler func(t Task) error
 
+// Server 配置参数
 type ServerOption struct {
 	Workersize  uint32
 	queueengine QueueEngine
 }
 
+// Server 结构
 type Server struct {
 	mutex       sync.RWMutex
 	cursize     uint32
@@ -56,6 +60,7 @@ type Server struct {
 	option      ServerOption
 }
 
+// 创建 Server
 func NewServer(option ServerOption) *Server {
 
 	s := Server{
@@ -69,6 +74,7 @@ func NewServer(option ServerOption) *Server {
 	return &s
 }
 
+// 注册 type 对应处理方法
 func (this *Server) Register(t int, h Handler) error {
 	_, ok := this.mux[t]
 
@@ -81,6 +87,7 @@ func (this *Server) Register(t int, h Handler) error {
 	return ErrHandlerExists
 }
 
+// 创建人物执行者
 func (this *Server) NewWorker() (Worker, error) {
 	var w Worker
 
@@ -114,10 +121,12 @@ func (this *Server) NewWorker() (Worker, error) {
 	return w, ErrMaxWorker
 }
 
+// 通知有新的任务
 func (this *Server) Notify() {
 	this.notifychan <- struct {}{}
 }
 
+// 启动 Server
 func (this *Server) Start() {
 	go func() {
 		for {

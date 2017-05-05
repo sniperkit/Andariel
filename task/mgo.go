@@ -3,8 +3,6 @@ package task
 import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"time"
-	"fmt"
 )
 
 type MgoQueueEngine struct {
