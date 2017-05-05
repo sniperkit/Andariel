@@ -48,14 +48,44 @@ var GitReposCollection *mgo.Collection
 // 连接、设置索引
 func PrepareGitRepos() {
 	GitReposCollection = mongo.GithubSession.DB(mongo.MDGitName).C("gitRepos")
-	repoIndex := mgo.Index{
-		Key:        []string{"FullName", "StarCount", "ForkCount", "Language"},
+
+	fullNameIndex := mgo.Index{
+		Key:        []string{"FullName"},
 		Unique:     true,
 		Background: true,
 		Sparse:     true,
 	}
+	if err := GitReposCollection.EnsureIndex(fullNameIndex); err != nil {
+		panic(err)
+	}
 
-	if err := GitReposCollection.EnsureIndex(repoIndex); err != nil {
+	starCountIndex := mgo.Index{
+		Key:        []string{"StarCount"},
+		Unique:     true,
+		Background: true,
+		Sparse:     true,
+	}
+	if err := GitReposCollection.EnsureIndex(starCountIndex); err != nil {
+		panic(err)
+	}
+
+	forkCountIndex := mgo.Index{
+		Key:        []string{"ForkCount"},
+		Unique:     true,
+		Background: true,
+		Sparse:     true,
+	}
+	if err := GitReposCollection.EnsureIndex(forkCountIndex); err != nil {
+		panic(err)
+	}
+
+	langCountIndex := mgo.Index{
+		Key:        []string{"Language"},
+		Unique:     true,
+		Background: true,
+		Sparse:     true,
+	}
+	if err := GitReposCollection.EnsureIndex(langCountIndex); err != nil {
 		panic(err)
 	}
 
