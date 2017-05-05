@@ -65,20 +65,16 @@ func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, *g
 	for {
 		repos, resp, err := GitClient.Client.Repositories.ListAll(context.Background(), opt)
 		if err != nil {
-			if resp == nil {
-				return nil, nil, err
-			}
-
-			return nil, resp, err
+			return allRepos, resp, err
 		}
 
 		allRepos = append(allRepos, repos...)
 
-		if resp.NextPage == 0 {
+		if len(repos) == 0 {
 			break
 		}
 
-		opt.ListOptions.Page = resp.NextPage
+		opt.Since = *repos[len(repos)-1].ID
 	}
 
 	return allRepos, resp, nil
