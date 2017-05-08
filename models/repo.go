@@ -61,7 +61,6 @@ func PrepareGitRepos() {
 
 	starCountIndex := mgo.Index{
 		Key:        []string{"StarCount"},
-		Unique:     true,
 		Background: true,
 		Sparse:     true,
 	}
@@ -71,7 +70,6 @@ func PrepareGitRepos() {
 
 	forkCountIndex := mgo.Index{
 		Key:        []string{"ForkCount"},
-		Unique:     true,
 		Background: true,
 		Sparse:     true,
 	}
@@ -81,7 +79,6 @@ func PrepareGitRepos() {
 
 	langCountIndex := mgo.Index{
 		Key:        []string{"Language"},
-		Unique:     true,
 		Background: true,
 		Sparse:     true,
 	}
