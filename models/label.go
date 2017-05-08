@@ -43,7 +43,7 @@ var LabelService *LabelServiceProvider
 var LabelCollection *mgo.Collection
 
 func PrepareGitLabel() {
-	LabelCollection = mongo.GithubSession.DB(mongo.MDGitName).C("Label")
+	LabelCollection = mongo.GithubSession.DB(mongo.MDGitName).C("MDLabel")
 
 	LabelIndex := mgo.Index{
 		Key:        []string{"Name"},
@@ -58,7 +58,7 @@ func PrepareGitLabel() {
 	LabelService = &LabelServiceProvider{}
 }
 
-type Label struct {
+type MDLabel struct {
 	LabelID bson.ObjectId `bson:"LabelID,omitempty" json:"id"`
 	Name    string        `bson:"Name" json:"name"`
 	Desc    string        `bson:"Desc" json:"desc"`
@@ -71,8 +71,8 @@ type Activate struct {
 	Active bool
 }
 
-func (tsp *LabelServiceProvider) Create(Label *Label) error {
-	l := Label{
+func (tsp *LabelServiceProvider) Create(Label *MDLabel) error {
+	l := MDLabel{
 		Name:   Label.Name,
 		Active: Label.Active,
 		Desc:   Label.Desc,
@@ -86,8 +86,8 @@ func (tsp *LabelServiceProvider) Create(Label *Label) error {
 	return nil
 }
 
-func (tsp *LabelServiceProvider) ListAll() ([]Label, error) {
-	var l []Label
+func (tsp *LabelServiceProvider) ListAll() ([]MDLabel, error) {
+	var l []MDLabel
 
 	err := LabelCollection.Find(nil).All(&l)
 	if err != nil {
