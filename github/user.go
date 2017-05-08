@@ -38,7 +38,7 @@ import (
 )
 
 // 调用 API 获取作者信息
-func GetOwnerByID(ownerID int) (*models.User, *github.Response, error) {
+func GetOwnerByID(ownerID int) (*models.MDUser, *github.Response, error) {
 	owner, resp, err := GitClient.Client.Users.GetByID(context.Background(), ownerID)
 	if err != nil {
 		if resp == nil {
@@ -48,7 +48,7 @@ func GetOwnerByID(ownerID int) (*models.User, *github.Response, error) {
 		return nil, resp, err
 	}
 
-	user := &models.User{
+	user := &models.MDUser{
 		Login:             owner.Login,
 		ID:                owner.ID,
 		HTMLURL:           owner.HTMLURL,

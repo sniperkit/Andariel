@@ -89,7 +89,7 @@ func PrepareGitRepos() {
 	GitReposService = &GitReposServiceProvider{}
 }
 
-type Repos struct {
+type MDRepos struct {
 	ID              bson.ObjectId     `bson:"_id,omitempty",json:"id"`
 	RepoID          *int              `bson:"RepoID,omitempty" json:"repoid,omitempty"`
 	Owner           *string           `bson:"Owner,omitempty" json:"-"`
@@ -111,9 +111,9 @@ type Repos struct {
 	Size            *int              `bson:"Size,omitempty" json:"size"`
 }
 
-// 存储库信息及作者在 User 数据库中的 ID
+// 存储库信息及作者在 MDUser 数据库中的 ID
 func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *string) error {
-	r := Repos{
+	r := MDRepos{
 		RepoID:          repos.ID,
 		Owner:           owner,
 		Name:            repos.Name,
@@ -151,7 +151,7 @@ func StoreRepo(repo *github.Repository) error {
 			return err
 		}
 
-		// User 数据库中无此作者信息
+		// MDUser 数据库中无此作者信息
 		newUserID, err := GitUserService.Create(repo.Owner)
 		if err != nil {
 			return err
@@ -163,7 +163,7 @@ func StoreRepo(repo *github.Repository) error {
 		}
 	}
 
-	// User 数据库中有此作者信息
+	// MDUser 数据库中有此作者信息
 	err = GitReposService.Create(repo, &oldUserID)
 	if err != nil {
 		return err

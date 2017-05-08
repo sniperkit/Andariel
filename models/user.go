@@ -62,7 +62,7 @@ func PrepareGitUser() {
 }
 
 // GitHub 用户数据结构
-type User struct {
+type MDUser struct {
 	UserID            bson.ObjectId     `bson:"_id,omitempty" json:"id"`
 	Login             *string           `bson:"Login,omitempty" json:"login"`
 	ID                *int              `bson:"ID,omitempty" json:"userid"`
@@ -83,8 +83,8 @@ type User struct {
 }
 
 // 查询作者信息
-func (usp *GitUserServiceProvider) GetUserByID(userID *int) (*User, error) {
-	var u User
+func (usp *GitUserServiceProvider) GetUserByID(userID *int) (*MDUser, error) {
+	var u MDUser
 
 	err := GitUserCollection.Find(bson.M{"ID": userID}).One(&u)
 	if err != nil {
@@ -96,7 +96,7 @@ func (usp *GitUserServiceProvider) GetUserByID(userID *int) (*User, error) {
 
 // 通过 login 获取作者在数据库中的 _id
 func (usp *GitUserServiceProvider) GetUserID(login *string) (string, error) {
-	var u User
+	var u MDUser
 
 	err := GitUserCollection.Find(bson.M{"Login": login}).One(&u)
 	if err != nil {
@@ -108,7 +108,7 @@ func (usp *GitUserServiceProvider) GetUserID(login *string) (string, error) {
 
 // 存储作者信息
 func (usp *GitUserServiceProvider) Create(user *github.User) (string, error) {
-	u := User{
+	u := MDUser{
 		Login:             user.Login,
 		ID:                user.ID,
 		HTMLURL:           user.HTMLURL,
