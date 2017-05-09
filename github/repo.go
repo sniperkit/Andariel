@@ -79,3 +79,35 @@ func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, *g
 
 	return allRepos, resp, nil
 }
+
+// SearchRepos 按条件搜索库
+func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, github.ListOptions, error) {
+	var (
+		listOpt  github.ListOptions
+		allRepos []github.Repository
+		repos    *github.RepositoriesSearchResult
+		resp     *github.Response
+		err      error
+	)
+
+	for {
+		repos, resp, err = GitClient.Client.Search.Repositories(context.Background(), query, opt)
+		if err != nil {
+			listOpt.Page = opt.ListOptions.Page
+
+			return allRepos, resp, listOpt, err
+		}
+
+		allRepos = append(allRepos, repos.Repositories...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+
+		opt.ListOptions.Page = resp.NextPage
+	}
+
+	listOpt.Page = opt.ListOptions.Page
+
+	return allRepos, resp, listOpt, nil
+}
