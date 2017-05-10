@@ -142,32 +142,3 @@ func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *stri
 	return nil
 }
 
-// 逻辑判断后，存储库信息到数据库
-func StoreRepo(repo *github.Repository) error {
-	// 判断数据库中是否有此作者信息
-	oldUserID, err := GitUserService.GetUserID(repo.Owner.Login)
-	if err != nil {
-		if err != mgo.ErrNotFound {
-			return err
-		}
-
-		// MDUser 数据库中无此作者信息
-		newUserID, err := GitUserService.Create(repo.Owner)
-		if err != nil {
-			return err
-		}
-
-		err = GitReposService.Create(repo, &newUserID)
-		if err != nil {
-			return err
-		}
-	}
-
-	// MDUser 数据库中有此作者信息
-	err = GitReposService.Create(repo, &oldUserID)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
