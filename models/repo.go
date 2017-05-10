@@ -46,8 +46,8 @@ var GitReposService *GitReposServiceProvider
 var GitReposCollection *mgo.Collection
 
 // 连接、设置索引
-func PrepareGitRepos() {
-	GitReposCollection = mongo.GithubSession.DB(mongo.MDGitName).C("gitRepos")
+func PrepareGitRepos(colName string) {
+	GitReposCollection = mongo.GithubSession.DB(mongo.MDGitName).C(colName)
 
 	fullNameIndex := mgo.Index{
 		Key:        []string{"FullName"},

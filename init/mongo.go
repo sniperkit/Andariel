@@ -33,7 +33,7 @@ import (
 	"Andariel/models"
 )
 
-func InitMongoCollections() {
-	models.PrepareGitRepos()
+func InitMongoCollections(colName string) {
+	models.PrepareGitRepos(colName)
 	models.PrepareGitUser()
 }
