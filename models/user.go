@@ -107,8 +107,9 @@ func (usp *GitUserServiceProvider) GetUserID(login *string) (string, error) {
 }
 
 // 存储作者信息
-func (usp *GitUserServiceProvider) Create(user *github.User) (string, error) {
+func (usp *GitUserServiceProvider) Create(user *MDUser) (string, error) {
 	u := MDUser{
+		UserID:            bson.NewObjectId(),
 		Login:             user.Login,
 		ID:                user.ID,
 		HTMLURL:           user.HTMLURL,
