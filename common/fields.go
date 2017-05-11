@@ -31,7 +31,8 @@ package common
 
 const (
 	// 按条件搜索 GitHub 库时的 query 类型
-	QueryType = "language"
+	QueryLanguage = "language"
+	QueryCreated  = "created"
 
 	// 搜索 GitHub 库时的指定语言类型(collection 名称)
 	LangC      = "C"
@@ -42,6 +43,7 @@ const (
 	LangHTML   = "HTML"
 	LangJava   = "Java"
 	LangJS     = "JavaScript"
+	LangLua    = "Lua"
 	LangObjC   = "Objective-C"
 	LangPHP    = "PHP"
 	LangPython = "Python"
