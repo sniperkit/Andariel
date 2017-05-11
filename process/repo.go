@@ -47,7 +47,8 @@ func StoreRepo(repo *github.Repository) error {
 		}
 
 		// MDUser 数据库中无此作者信息
-		newOwner, _, err := git.GetOwnerByID(*repo.Owner.ID)
+		newOwner, resp, err := git.GetOwnerByID(*repo.Owner.ID)
+		git.Wait(resp)
 		if err != nil {
 			return err
 		}
