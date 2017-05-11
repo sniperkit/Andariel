@@ -31,6 +31,8 @@ package github
 
 import (
 	"context"
+	"math"
+	"time"
 
 	"github.com/google/go-github/github"
 )
@@ -80,34 +82,46 @@ func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, *g
 	return allRepos, resp, nil
 }
 
-// SearchRepos 按条件搜索库
-func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, github.ListOptions, error) {
+// 按条件从 github 搜索库，受 github API 限制，一次请求只能获取 1000 条记录
+func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, error) {
 	var (
-		listOpt  github.ListOptions
-		allRepos []github.Repository
-		repos    *github.RepositoriesSearchResult
-		resp     *github.Response
-		err      error
+		result []github.Repository
+		resp   *github.Response
 	)
 
-	for {
-		repos, resp, err = GitClient.Client.Search.Repositories(context.Background(), query, opt)
+	page := 1
+	maxPage := math.MaxInt32
+
+	for page <= maxPage {
+		opt.Page = page
+		repos, resp, err := GitClient.Client.Search.Repositories(context.Background(), query, opt)
+		Wait(resp)
+
 		if err != nil {
-			listOpt.Page = opt.ListOptions.Page
-
-			return allRepos, resp, listOpt, err
+			if resp == nil {
+				return nil, nil, err
+			}
+			return nil, resp, err
 		}
 
-		allRepos = append(allRepos, repos.Repositories...)
+		maxPage = resp.LastPage
+		result = append(result, repos.Repositories...)
 
-		if resp.NextPage == 0 {
-			break
-		}
-
-		opt.ListOptions.Page = resp.NextPage
+		page++
 	}
 
-	listOpt.Page = opt.ListOptions.Page
+	return result, resp, nil
+}
 
-	return allRepos, resp, listOpt, nil
+func Wait(resp *github.Response) {
+	if resp != nil && resp.Remaining <= 1 {
+		gap := time.Duration(resp.Reset.Local().Unix() - time.Now().Unix())
+		sleep := gap * time.Second
+
+		if sleep < 0 {
+			sleep = -sleep
+		}
+
+		time.Sleep(sleep)
+	}
 }
