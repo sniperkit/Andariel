@@ -113,6 +113,36 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 	return result, resp, nil
 }
 
+// SearchReposByCreated 按创建时间及其它指定条件搜索库
+// queries: 指定库的创建时间
+// For example:
+//     queries := []string{"\"2008-06-01 .. 2012-09-01\"", "\"2012-09-02 .. 2013-03-01\"", "\"2013-03-02 .. 2013-09-03\"", "\"2013-09-04 .. 2014-03-05\"", "\"2014-03-06 .. 2014-09-07\"", "\"2014-09-08 .. 2015-03-09\"", "\"2015-03-10 .. 2015-09-11\"", "\"2015-09-12 .. 2016-03-13\"", "\"2016-03-14 .. 2016-09-15\"", "\"2016-09-16 .. 2017-03-17\""}
+//
+// querySeg: 指定除创建时间之外的其它条件
+// For example:
+//     queryPart := common.QueryLanguage + ":" + common.LangLua + " " + common.QueryCreated + ":"
+//
+func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, error) {
+	var (
+		result []github.Repository
+		resp   *github.Response
+	)
+
+	for _, q := range queries {
+		query := querySeg + q
+
+		repos, resp, err := SearchRepos(query, opt)
+		if err != nil {
+			return nil, resp, err
+		}
+
+		result = append(result, repos...)
+	}
+
+	return result, resp, nil
+}
+
+// 根据 *github.Response 等待相应时间
 func Wait(resp *github.Response) {
 	if resp != nil && resp.Remaining <= 1 {
 		gap := time.Duration(resp.Reset.Local().Unix() - time.Now().Unix())
