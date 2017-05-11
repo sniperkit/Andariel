@@ -46,7 +46,7 @@ var GitUserCollection *mgo.Collection
 
 // 连接、设置索引
 func PrepareGitUser() {
-	GitUserCollection = mongo.GithubSession.DB(mongo.MDGitName).C("gitUser")
+	GitUserCollection = mongo.GithubSession.DB(mongo.MDGitName).C("Owner")
 	userIndex := mgo.Index{
 		Key:        []string{"Login"},
 		Unique:     true,
