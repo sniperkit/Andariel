@@ -122,6 +122,13 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 // For example:
 //     queryPart := common.QueryLanguage + ":" + common.LangLua + " " + common.QueryCreated + ":"
 //
+// opt: 为搜索方法指定可选参数
+// For example:
+//     opt := &github.SearchOptions{
+//         Sort:        common.SortByStars,
+//         Order:       common.OrderByDesc,
+//         ListOptions: github.ListOptions{PerPage: 100},
+//     }
 func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, error) {
 	var (
 		result []github.Repository
