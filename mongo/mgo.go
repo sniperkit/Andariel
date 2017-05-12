@@ -15,17 +15,13 @@ const (
 )
 
 // 初始化 MongoDB 连接
-func InitGithub() {
-	url := "mongodb://10.0.0.254:27017"
-
+func InitGithub(url string) {
 	var err error
 	GithubSession, err = mgo.Dial(url)
 
 	if err != nil {
 		panic(err)
 	}
-
-	log.Print("The MongoDB of GitHub connected.")
 
 	// 利用 MongoDB 分布性特性
 	GithubSession.SetMode(mgo.Monotonic, true)
