@@ -42,6 +42,7 @@ type LabelServiceProvider struct {
 var LabelService *LabelServiceProvider
 var LabelCollection *mgo.Collection
 
+// 连接数据库、创建索引
 func PrepareGitLabel() {
 	LabelCollection = mongo.GithubSession.DB(mongo.MDGitName).C("MDLabel")
 
@@ -58,6 +59,7 @@ func PrepareGitLabel() {
 	LabelService = &LabelServiceProvider{}
 }
 
+// 标签数据结构
 type MDLabel struct {
 	LabelID bson.ObjectId `bson:"LabelID,omitempty" json:"id"`
 	Name    string        `bson:"Name" json:"name"`
@@ -66,16 +68,27 @@ type MDLabel struct {
 	Total   uint64        `bson:"Total" json:"total"`
 }
 
+// 修改标签状态数据结构
 type Activate struct {
 	Name   string
 	Active bool
 }
 
+// 修改标签内容数据结构
+type MDModifyLabel struct {
+	LabelID string
+	Name    string
+	Desc    string
+	Active  bool
+}
+
+// 新建标签
 func (tsp *LabelServiceProvider) Create(Label *MDLabel) error {
 	l := MDLabel{
-		Name:   Label.Name,
-		Active: Label.Active,
-		Desc:   Label.Desc,
+		LabelID: bson.NewObjectId(),
+		Name:    Label.Name,
+		Active:  Label.Active,
+		Desc:    Label.Desc,
 	}
 
 	err := LabelCollection.Insert(&l)
@@ -86,6 +99,7 @@ func (tsp *LabelServiceProvider) Create(Label *MDLabel) error {
 	return nil
 }
 
+// 获取所有标签
 func (tsp *LabelServiceProvider) ListAll() ([]MDLabel, error) {
 	var l []MDLabel
 
@@ -97,12 +111,41 @@ func (tsp *LabelServiceProvider) ListAll() ([]MDLabel, error) {
 	return l, nil
 }
 
+// 获取单个标签内容
+func (tsp *LabelServiceProvider) GetLabelInfo(labelID string) (MDLabel, error) {
+	var l MDLabel
+
+	err := LabelCollection.Find(bson.M{"LabelID": bson.ObjectIdHex(labelID)}).One(&l)
+	if err != nil {
+		return nil, err
+	}
+
+	return l, nil
+}
+
+// 修改标签状态
 func (tsp *LabelServiceProvider) Activate(activate Activate) error {
 	update := bson.M{"$set": bson.M{
 		"Active": activate.Active,
 	}}
 
 	err := LabelCollection.Update(bson.M{"Name": activate.Name}, &update)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// 修改标签内容
+func (tsp *LabelServiceProvider) Modify(label MDModifyLabel) error {
+	update := bson.M{"$set": bson.M{
+		"Name":   label.Name,
+		"Desc":   label.Desc,
+		"Active": label.Active,
+	}}
+
+	err := LabelCollection.Update(bson.M{"LabelID": bson.ObjectIdHex(label.LabelID)}, &update)
 	if err != nil {
 		return err
 	}
