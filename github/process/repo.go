@@ -33,7 +33,7 @@ import (
 	"github.com/google/go-github/github"
 	"gopkg.in/mgo.v2"
 
-	git "Andariel/github"
+	git "Andariel/github/general"
 	"Andariel/models"
 )
 

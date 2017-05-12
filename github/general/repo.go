@@ -27,7 +27,7 @@
  *     Initial: 28/04/2017        Jia Chenhui
  */
 
-package github
+package general
 
 import (
 	"context"

@@ -27,7 +27,7 @@
  *     Initial: 2017/04/17        Yusan Kurban
  */
 
-package github
+package general
 
 import (
 	"Andariel/log"
@@ -83,7 +83,7 @@ type Rate struct {
 	ResetIn 	time.Duration
 }
 
-var GitClient *GithubClient = newClient("")
+var GitClient *GithubClient = newClient("54f7488c8f72d3e63692b2bf04167d97e7a29e1d")
 
 func newClient(token string) (client *GithubClient) {
 	if token == "" {
