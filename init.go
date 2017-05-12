@@ -48,6 +48,6 @@ func init() {
 
 	readConfiguration()
 
-	mongo.InitGithub(*configuration.MongoUrl)
+	mongo.InitGithub(configuration.MongoUrl)
 	logger.Debug("The MongoDB of GitHub connected.")
 }
