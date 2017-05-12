@@ -105,7 +105,7 @@ func (this *GithubClient) init(tokenSource oauth2.TokenSource) {
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
 	client := github.NewClient(httpClient)
 	this.Client = client
-	if this.isValidToken(httpClient) {
+	if !this.isValidToken(httpClient) {
 		logger.Debug("Invalid token.")
 		return
 	}
@@ -181,10 +181,10 @@ func (this *GithubClient) isValidToken(c *http.Client) bool {
 	}
 
 	if resp.Header.Get("Status") == invalidTokenErr {
-		return true
+		return false
 	}
 
-	return false
+	return true
 }
 
 func (this *GithubClient) requestTimes() (error, bool) {
