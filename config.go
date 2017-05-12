@@ -9,7 +9,7 @@ var (
 )
 
 type Config struct {
-	MongoUrl        *string
+	MongoUrl        string
 }
 
 func readConfiguration() {
@@ -21,6 +21,6 @@ func readConfiguration() {
 	}
 
 	configuration = &Config{
-		MongoUrl:                 &viper.GetString("mongo.url"),
+		MongoUrl:                viper.GetString("mongo.url"),
 	}
 }
