@@ -35,6 +35,8 @@ import (
 	"time"
 
 	"github.com/google/go-github/github"
+
+	"Andariel/common"
 )
 
 // GetRepoByID 根据库 ID 调用 github API 获取库信息
@@ -82,7 +84,8 @@ func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, *g
 	return allRepos, resp, nil
 }
 
-// 按条件从 github 搜索库，受 github API 限制，一次请求只能获取 1000 条记录
+// SearchRepos 按条件从 github 搜索库，受 github API 限制，一次请求只能获取 1000 条记录
+// GitHub API docs: https://developer.github.com/v3/search/#search-repositories
 func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, error) {
 	var (
 		result []github.Repository
@@ -129,6 +132,7 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 //         Order:       common.OrderByDesc,
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
+// GitHub API docs: https://developer.github.com/v3/search/#search-repositories
 func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, error) {
 	var (
 		result []github.Repository
@@ -144,6 +148,78 @@ func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchO
 		}
 
 		result = append(result, repos...)
+	}
+
+	return result, resp, nil
+}
+
+// SearchReposByStartTime 按指定创建时间、时间间隔及其它条件搜索库
+// year、month、day: 从此创建时间开始搜索
+// For example：
+//     year = 2016 month = time.January day = 1
+//     时间格式化只能使用 "2006-01-02 15:04:05" 进行，可将年月日和 时分秒拆开使用
+//
+// incremental: 以此时间增量搜索，如第一次搜索 1 月份的库，第二次搜索 2 月份的库
+// For example:
+//     interval = "month"
+//
+// querySeg: 指定除创建时间之外的其它条件
+// For example:
+//     queryPart := common.QueryLanguage + ":" + common.LangLua + " " + common.QueryCreated + ":"
+//
+// opt: 为搜索方法指定可选参数
+// For example:
+//     opt := &github.SearchOptions{
+//         Sort:        common.SortByStars,
+//         Order:       common.OrderByDesc,
+//         ListOptions: github.ListOptions{PerPage: 100},
+//     }
+// GitHub API docs: https://developer.github.com/v3/search/#search-repositories
+func SearchReposByStartTime(year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, error) {
+	var (
+		result []github.Repository
+		resp   *github.Response
+	)
+
+	date := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
+
+	for date.Unix() < time.Now().Unix() {
+		var dateFormat string
+
+		switch incremental {
+		case common.OneQuarter:
+			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 3, 0).Format("2006-01-02")
+		case common.OneMonth:
+			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 1, 0).Format("2006-01-02")
+		case common.OneWeek:
+			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 7).Format("2006-01-02")
+		case common.OneDay:
+			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 1).Format("2006-01-02")
+		default:
+			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 1, 0).Format("2006-01-02")
+		}
+
+		query := querySeg + dateFormat
+
+		repos, resp, err := SearchRepos(query, opt)
+		if err != nil {
+			return nil, resp, err
+		}
+
+		result = append(result, repos...)
+
+		switch incremental {
+		case common.OneQuarter:
+			date = date.AddDate(0, 3, 0)
+		case common.OneMonth:
+			date = date.AddDate(0, 1, 0)
+		case common.OneWeek:
+			date = date.AddDate(0, 0, 7)
+		case common.OneDay:
+			date = date.AddDate(0, 0, 1)
+		default:
+			date = date.AddDate(0, 1, 0)
+		}
 	}
 
 	return result, resp, nil
