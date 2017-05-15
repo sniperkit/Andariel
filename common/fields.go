@@ -61,4 +61,10 @@ const (
 	// 对 GitHub 库搜索结果的排序顺序(增/减)
 	OrderByAsc  = "asc"
 	OrderByDesc = "desc"
+
+	// 搜索库时指定的时间增量
+	OneQuarter = "quarter"
+	OneMonth   = "month"
+	OneWeek    = "week"
+	OneDay     = "day"
 )
