@@ -86,10 +86,11 @@ func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, *g
 
 // SearchRepos 按条件从 github 搜索库，受 github API 限制，一次请求只能获取 1000 条记录
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, error) {
+func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, *github.Timestamp, error) {
 	var (
 		result []github.Repository
 		resp   *github.Response
+		stopAt *github.Timestamp
 	)
 
 	page := 1
@@ -98,13 +99,20 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 	for page <= maxPage {
 		opt.Page = page
 		repos, resp, err := GitClient.Client.Search.Repositories(context.Background(), query, opt)
+
+		if repos.Repositories != nil {
+			stopAt = repos.Repositories[len(repos.Repositories)-1].CreatedAt
+		} else {
+			stopAt = &github.Timestamp{}
+		}
+
 		Wait(resp)
 
 		if err != nil {
 			if resp == nil {
-				return nil, nil, err
+				return nil, nil, stopAt, err
 			}
-			return nil, resp, err
+			return nil, resp, stopAt, err
 		}
 
 		maxPage = resp.LastPage
@@ -113,7 +121,7 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 		page++
 	}
 
-	return result, resp, nil
+	return result, resp, stopAt, nil
 }
 
 // SearchReposByCreated 按创建时间及其它指定条件搜索库
@@ -133,24 +141,26 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, error) {
+func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, *github.Timestamp, error) {
 	var (
-		result []github.Repository
-		resp   *github.Response
+		result, repos []github.Repository
+		resp          *github.Response
+		stopAt        *github.Timestamp
+		err           error
 	)
 
 	for _, q := range queries {
 		query := querySeg + q
 
-		repos, resp, err := SearchRepos(query, opt)
+		repos, resp, stopAt, err = SearchRepos(query, opt)
 		if err != nil {
-			return nil, resp, err
+			return nil, resp, stopAt, err
 		}
 
 		result = append(result, repos...)
 	}
 
-	return result, resp, nil
+	return result, resp, stopAt, nil
 }
 
 // SearchReposByStartTime 按指定创建时间、时间间隔及其它条件搜索库
@@ -175,10 +185,12 @@ func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchO
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchReposByStartTime(year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, error) {
+func SearchReposByStartTime(year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, *github.Timestamp, error) {
 	var (
-		result []github.Repository
-		resp   *github.Response
+		result, repos []github.Repository
+		resp          *github.Response
+		stopAt        *github.Timestamp
+		err           error
 	)
 
 	date := time.Date(year, month, day, 0, 0, 0, 0, time.UTC)
@@ -201,9 +213,9 @@ func SearchReposByStartTime(year int, month time.Month, day int, incremental, qu
 
 		query := querySeg + dateFormat
 
-		repos, resp, err := SearchRepos(query, opt)
+		repos, resp, stopAt, err = SearchRepos(query, opt)
 		if err != nil {
-			return nil, resp, err
+			return nil, resp, stopAt, err
 		}
 
 		result = append(result, repos...)
@@ -222,7 +234,7 @@ func SearchReposByStartTime(year int, month time.Month, day int, incremental, qu
 		}
 	}
 
-	return result, resp, nil
+	return result, resp, stopAt, nil
 }
 
 // 根据 *github.Response 等待相应时间
