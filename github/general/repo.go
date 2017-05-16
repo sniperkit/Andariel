@@ -210,15 +210,15 @@ func SearchReposByStartTime(year int, month time.Month, day int, incremental, qu
 
 		switch incremental {
 		case common.OneQuarter:
-			date = date.AddDate(0, 3, 0)
+			date = date.AddDate(0, 3, 1)
 		case common.OneMonth:
-			date = date.AddDate(0, 1, 0)
+			date = date.AddDate(0, 1, 1)
 		case common.OneWeek:
-			date = date.AddDate(0, 0, 7)
+			date = date.AddDate(0, 0, 8)
 		case common.OneDay:
-			date = date.AddDate(0, 0, 1)
+			date = date.AddDate(0, 0, 2)
 		default:
-			date = date.AddDate(0, 1, 0)
+			date = date.AddDate(0, 1, 1)
 		}
 	}
 
