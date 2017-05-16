@@ -89,8 +89,10 @@ func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, *g
 func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, *github.Timestamp, error) {
 	var (
 		result []github.Repository
+		repos  *github.RepositoriesSearchResult
 		resp   *github.Response
 		stopAt *github.Timestamp
+		err    error
 	)
 
 	page := 1
@@ -98,17 +100,11 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 
 	for page <= maxPage {
 		opt.Page = page
-		repos, resp, err := GitClient.Client.Search.Repositories(context.Background(), query, opt)
-
-		if repos.Repositories != nil {
-			stopAt = repos.Repositories[len(repos.Repositories)-1].CreatedAt
-		} else {
-			stopAt = &github.Timestamp{}
-		}
-
+		repos, resp, err = GitClient.Client.Search.Repositories(context.Background(), query, opt)
 		Wait(resp)
 
 		if err != nil {
+			stopAt = &github.Timestamp{}
 			if resp == nil {
 				return nil, nil, stopAt, err
 			}
@@ -119,6 +115,12 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 		result = append(result, repos.Repositories...)
 
 		page++
+	}
+
+	if len(result) != 0 {
+		stopAt = result[len(result)-1].CreatedAt
+	} else {
+		stopAt = &github.Timestamp{}
 	}
 
 	return result, resp, stopAt, nil
