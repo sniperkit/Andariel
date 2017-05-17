@@ -32,6 +32,7 @@ package general
 import (
 	"context"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -86,12 +87,12 @@ func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, *g
 
 // SearchRepos 按条件从 github 搜索库，受 github API 限制，一次请求只能获取 1000 条记录
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, *github.Timestamp, error) {
+func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result []github.Repository
 		repos  *github.RepositoriesSearchResult
 		resp   *github.Response
-		stopAt *github.Timestamp
+		stopAt string
 		err    error
 	)
 
@@ -104,7 +105,7 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 		Wait(resp)
 
 		if err != nil {
-			stopAt = &github.Timestamp{}
+			stopAt = ""
 			if resp == nil {
 				return nil, nil, stopAt, err
 			}
@@ -117,10 +118,11 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 		page++
 	}
 
+	// 获取 query 中的时间字符串，以便下次时请求从这个时间开始
 	if len(result) != 0 {
-		stopAt = result[len(result)-1].CreatedAt
+		stopAt = SplitQuery(query)
 	} else {
-		stopAt = &github.Timestamp{}
+		stopAt = ""
 	}
 
 	return result, resp, stopAt, nil
@@ -143,11 +145,11 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, *github.Timestamp, error) {
+func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result, repos []github.Repository
 		resp          *github.Response
-		stopAt        *github.Timestamp
+		stopAt        string
 		err           error
 	)
 
@@ -187,11 +189,11 @@ func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchO
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchReposByStartTime(year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, *github.Timestamp, error) {
+func SearchReposByStartTime(year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result, repos []github.Repository
 		resp          *github.Response
-		stopAt        *github.Timestamp
+		stopAt        string
 		err           error
 	)
 
@@ -251,4 +253,12 @@ func Wait(resp *github.Response) {
 
 		time.Sleep(sleep)
 	}
+}
+
+// 解析传入的 query 字符串，得到最后请求时间
+func SplitQuery(query string) string {
+	dateSlice := strings.SplitAfter(query, ".. ")[1]
+	dateStr := strings.Split(dateSlice, "\"")[0]
+
+	return dateStr
 }
