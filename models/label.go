@@ -116,11 +116,8 @@ func (tsp *LabelServiceProvider) GetLabelInfo(labelID string) (MDLabel, error) {
 	var l MDLabel
 
 	err := LabelCollection.Find(bson.M{"LabelID": bson.ObjectIdHex(labelID)}).One(&l)
-	if err != nil {
-		return nil, err
-	}
 
-	return l, nil
+	return l, err
 }
 
 // 修改标签状态

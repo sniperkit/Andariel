@@ -32,6 +32,7 @@ package main
 import (
 	"Andariel/log"
 	"Andariel/interrupt"
+	"Andariel/mongo"
 )
 
 var logger *log.AndarielLogger = log.AndarielCreateLogger(
@@ -46,4 +47,7 @@ func init() {
 	logger.Debug("Interrupt handler initialized")
 
 	readConfiguration()
+
+	mongo.InitGithub(configuration.MongoUrl)
+	logger.Debug("The MongoDB of GitHub connected.")
 }
