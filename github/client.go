@@ -98,6 +98,8 @@ func newClient(token string) (client *GithubClient) {
 		client.init(tokenSource)
 	}
 
+	go GitClient.monitor()
+
 	return client
 }
 
@@ -196,6 +198,7 @@ func (this *GithubClient) requestTimes() (error, bool) {
 	this.Core.Left = rate.Core.Remaining
 	this.Core.Reset = rate.Core.Reset.Time
 	this.Core.ResetIn = rate.Core.Reset.Sub(time.Now())
+	this.StartAt = rate.Core.Reset.Time.Add(-time.Hour * 1)
 
 
 	if this.Core.Left != authNonSearchLimit- 1 {
@@ -207,6 +210,10 @@ func (this *GithubClient) requestTimes() (error, bool) {
 
 func (this *GithubClient) monitor() {
 	for {
+		if time.Now().Sub(this.StartAt) > time.Duration(1 * time.Hour) {
+			this.StartAt = this.StartAt.Add(time.Duration(1 * time.Hour))
+		}
+
 		this.onErr()
 		if this.Core.Left == empty {
 			if this.Core.ResetIn == empty {
