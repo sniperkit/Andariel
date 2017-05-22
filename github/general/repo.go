@@ -41,8 +41,8 @@ import (
 )
 
 // GetRepoByID 根据库 ID 调用 github API 获取库信息
-func GetRepoByID(repoID int) (*github.Repository, *github.Response, error) {
-	repo, resp, err := GitClient.Client.Repositories.GetByID(context.Background(), repoID)
+func GetRepoByID(client *GithubClient, repoID int) (*github.Repository, *github.Response, error) {
+	repo, resp, err := client.Client.Repositories.GetByID(context.Background(), repoID)
 	if err != nil {
 		if resp == nil {
 			return nil, nil, err
@@ -61,14 +61,14 @@ func GetRepoByID(repoID int) (*github.Repository, *github.Response, error) {
 //	opt := &github.RepositoryListAllOptions{
 //		ListOptions: github.ListOptions{PerPage: 10},
 //	}
-func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, *github.Response, error) {
+func GetAllRepos(client *GithubClient, opt *github.RepositoryListAllOptions) ([]*github.Repository, *github.Response, error) {
 	var (
 		allRepos []*github.Repository
 		resp     *github.Response
 	)
 
 	for {
-		repos, resp, err := GitClient.Client.Repositories.ListAll(context.Background(), opt)
+		repos, resp, err := client.Client.Repositories.ListAll(context.Background(), opt)
 		if err != nil {
 			return allRepos, resp, err
 		}
@@ -87,7 +87,7 @@ func GetAllRepos(opt *github.RepositoryListAllOptions) ([]*github.Repository, *g
 
 // SearchRepos 按条件从 github 搜索库，受 github API 限制，一次请求只能获取 1000 条记录
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
+func SearchRepos(client *GithubClient, query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result []github.Repository
 		repos  *github.RepositoriesSearchResult
@@ -101,8 +101,7 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 
 	for page <= maxPage {
 		opt.Page = page
-		repos, resp, err = GitClient.Client.Search.Repositories(context.Background(), query, opt)
-		Wait(resp)
+		repos, resp, err = client.Client.Search.Repositories(context.Background(), query, opt)
 
 		if err != nil {
 			stopAt = ""
@@ -145,7 +144,7 @@ func SearchRepos(query string, opt *github.SearchOptions) ([]github.Repository, 
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
+func SearchReposByCreated(client *GithubClient, queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result, repos []github.Repository
 		resp          *github.Response
@@ -156,7 +155,7 @@ func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchO
 	for _, q := range queries {
 		query := querySeg + q
 
-		repos, resp, stopAt, err = SearchRepos(query, opt)
+		repos, resp, stopAt, err = SearchRepos(client, query, opt)
 		if err != nil {
 			return nil, resp, stopAt, err
 		}
@@ -189,7 +188,7 @@ func SearchReposByCreated(queries []string, querySeg string, opt *github.SearchO
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchReposByStartTime(year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
+func SearchReposByStartTime(client *GithubClient, year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result, repos []github.Repository
 		resp          *github.Response
@@ -217,7 +216,7 @@ func SearchReposByStartTime(year int, month time.Month, day int, incremental, qu
 
 		query := querySeg + dateFormat
 
-		repos, resp, stopAt, err = SearchRepos(query, opt)
+		repos, resp, stopAt, err = SearchRepos(client, query, opt)
 		if err != nil {
 			return nil, resp, stopAt, err
 		}
