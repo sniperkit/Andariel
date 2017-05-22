@@ -30,147 +30,89 @@
 package general
 
 import (
-	"Andariel/log"
+	"net/http"
+	"time"
 
 	"github.com/google/go-github/github"
-	"github.com/pkg/errors"
 	"golang.org/x/oauth2"
 
-	"time"
-	"net/http"
+	ctn "Andariel/common/container"
+	"Andariel/log"
+)
+
+const (
+	empty                 = 0
+	authNonSearchLimit    = 5000 //per hour
+	nonAuthNonSearchLimit = 60
+	authSearchLimit       = 30 //per minutes
+	nonAuthSearchLimit    = 10
+
+	authClient    = 0x01
+	nonAuthClient = 0x10
+
+	invalidTokenErr = "401 Unauthorized"
 )
 
 var logger *log.AndarielLogger = log.AndarielCreateLogger(
 	&log.AndarielLogTag{
 		log.LogTagService: "github",
-		log.LogTagType: "client",
+		log.LogTagType:    "client",
 	},
 	log.AndarielLogLevelDefault)
 
-
-const (
-	empty              		= 0
-	authNonSearchLimit 		= 5000	//per hour
-	nonAuthNonSearchLimit 	= 60
-	authSearchLimit	   		= 30 	//per minutes
-	nonAuthSearchLimit 		= 10
-
-	authClient				= 0x01
-	nonAuthClient			= 0x10
-
-	core					= "core"
-	search 					= "search"
-
-	invalidTokenErr 		= "401 Unauthorized"
-)
+var GitClient *GithubClient = newClient("54f7488c8f72d3e63692b2bf04167d97e7a29e1d")
 
 type GithubClient struct {
-	Client      *github.Client
-	StartAt     time.Time
-	LimitAt     time.Time
-	RequestTime time.Duration
-	ClientType  int
-	Core 		Rate
-	Search 		Rate
+	Client  *github.Client
+	StartAt time.Time
+	LimitAt time.Time
+	Type    int
+	Rate
 }
 
 type Rate struct {
-	Times		int
-	Limit 		int
-	Left 		int
-	Limited 	bool
-	Reset 		time.Time
-	ResetIn 	time.Duration
+	Times     int
+	Limit     int
+	Remaining int
+	Limited   bool
+	Reset     time.Time
+	ResetIn   time.Duration
 }
-
-var GitClient *GithubClient = newClient("54f7488c8f72d3e63692b2bf04167d97e7a29e1d")
 
 func newClient(token string) (client *GithubClient) {
 	if token == "" {
 		client = new(GithubClient)
-		tokenSource := *new(oauth2.TokenSource)
-		client.ClientType = nonAuthClient
+		tokenSource := new(oauth2.TokenSource)
+		client.Type = nonAuthClient
 		client.init(tokenSource)
 	} else {
 		client = new(GithubClient)
 		tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-		client.ClientType = authClient
+		client.Type = authClient
 		client.init(tokenSource)
 	}
-
-	go GitClient.monitor()
 
 	return client
 }
 
-func (this *GithubClient) init(tokenSource oauth2.TokenSource) {
+func (gc *GithubClient) init(tokenSource oauth2.TokenSource) {
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
 	client := github.NewClient(httpClient)
-	this.Client = client
-	if !this.isValidToken(httpClient) {
+	gc.Client = client
+	if !gc.isValidToken(httpClient) {
 		logger.Debug("Invalid token.")
 		return
 	}
-	err, ok := this.requestTimes()
 
+	err, _ := gc.requestTimes()
 	if err != nil {
 		logger.Error("Get limits crash with error:", err)
 		return
 	}
-
-	if ok {
-		this.StartAt = time.Now()
-	}
 }
 
-func (this *GithubClient) checkLimit(limit string) bool {
-	switch {
-	case limit == search:
-		return this.Search.Limited
-	default:
-		return this.Core.Limited
-	}
-
-}
-
-func (this *GithubClient) onErr() error {
-	var err error
-	if s, ok := err.(*github.RateLimitError); ok {
-		reset := this.StartAt.Add(time.Hour * 1)
-		this.LimitAt = time.Now()
-		this.Core.Limited = true
-		this.RequestTime = this.LimitAt.Sub(this.StartAt)
-		this.Core.ResetIn = reset.Sub(this.LimitAt)
-		e := (github.RateLimitError)(*s)
-		return errors.New(e.Message)
-	}
-
-	return nil
-}
-
-func (this *GithubClient) reset(limit string) {
-	switch {
-	case limit == search:
-		if this.ClientType == authClient {
-			this.Search.Left = authSearchLimit
-		} else {
-			this.Search.Left = nonAuthSearchLimit
-		}
-		this.Search.Times = empty
-		this.Search.Limited = false
-	default:
-		if this.ClientType == authClient {
-			this.Core.Left = authNonSearchLimit
-		} else {
-			this.Core.Left = nonAuthNonSearchLimit
-		}
-		this.Core.Times = empty
-		this.Core.Limited = false
-	}
-}
-
-func (this *GithubClient) isValidToken(c *http.Client) bool {
-	req, err := this.Client.NewRequest("GET", "", nil)
+func (gc *GithubClient) isValidToken(c *http.Client) bool {
+	req, err := gc.Client.NewRequest("GET", "", nil)
 	if err != nil {
 		logger.Error("crash with:", err)
 		return false
@@ -189,41 +131,170 @@ func (this *GithubClient) isValidToken(c *http.Client) bool {
 	return true
 }
 
-func (this *GithubClient) requestTimes() (error, bool) {
-	rate, _, err := this.Client.RateLimits(oauth2.NoContext)
+func (gc *GithubClient) onLimit(resp *github.Response) error {
+	if resp != nil && resp.Remaining <= 1 {
+		gc.LimitAt = time.Now()
+		gc.Limited = true
+		gc.ResetIn = resp.Reset.Time.Sub(gc.LimitAt)
+		gc.Limited = true
+		gc.Reset = resp.Reset.Time
+	}
+
+	return nil
+}
+
+func (gc *GithubClient) reset() {
+	if gc.Type == authClient {
+		gc.Remaining = authNonSearchLimit
+	} else {
+		gc.Remaining = nonAuthNonSearchLimit
+	}
+	gc.Times = empty
+	gc.Limited = false
+}
+
+func (gc *GithubClient) requestTimes() (error, bool) {
+	rate, _, err := gc.Client.RateLimits(oauth2.NoContext)
 	if err != nil {
 		return err, false
 	}
-	this.Core.Times = rate.Core.Limit - rate.Core.Remaining
-	this.Core.Left = rate.Core.Remaining
-	this.Core.Reset = rate.Core.Reset.Time
-	this.Core.ResetIn = rate.Core.Reset.Sub(time.Now())
-	this.StartAt = rate.Core.Reset.Time.Add(-time.Hour * 1)
 
+	// TODO: 此处未分类, 需修改
+	gc.Times = rate.Core.Limit - rate.Core.Remaining
+	gc.Remaining = rate.Core.Remaining
+	gc.Reset = rate.Core.Reset.Time
+	gc.ResetIn = rate.Core.Reset.Sub(time.Now())
 
-	if this.Core.Left != authNonSearchLimit- 1 {
+	if gc.Remaining != authNonSearchLimit-1 {
 		return nil, false
 	}
 
 	return nil, true
 }
 
-func (this *GithubClient) monitor() {
-	for {
-		if time.Now().Sub(this.StartAt) > time.Duration(1 * time.Hour) {
-			this.StartAt = this.StartAt.Add(time.Duration(1 * time.Hour))
-		}
+func (gc *GithubClient) monitor(resp *github.Response) {
+	gc.onLimit(resp)
 
-		this.onErr()
-		if this.Core.Left == empty {
-			if this.Core.ResetIn == empty {
-				this.reset(core)
+	if gc.Remaining == empty {
+		if gc.ResetIn == empty {
+			gc.reset()
+		}
+	}
+}
+
+func (gc *GithubClient) checkLimit() bool {
+	return gc.Limited
+}
+
+func (gc *GithubClient) isValidClient() bool {
+	if gc.Remaining == empty {
+		return false
+	}
+
+	return true
+}
+
+type ClientRing struct {
+	*ctn.Ring
+}
+
+var ClientRingService *ClientRing = new(ClientRing)
+
+// 创建 client 并存储到 ring
+func (cr *ClientRing) newClientRing(tokens []string) error {
+	var clients []*GithubClient
+
+	for _, t := range tokens {
+		client := newClient(t)
+		clients = append(clients, client)
+	}
+
+	clientRing := ctn.NewRing(len(tokens))
+
+	err := clientRing.MPush(clients)
+	if err != nil {
+		return err
+	}
+
+	cr.Ring = clientRing
+
+	return nil
+}
+
+// 存储 client 到 ring
+func (cr *ClientRing) push(client *GithubClient) error {
+	err := cr.Push(client)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// 从 ring 内读取 client
+func (cr *ClientRing) get() *GithubClient {
+	client := cr.Get()
+
+	c, ok := client.(*GithubClient)
+	if !ok {
+		return nil
+	}
+
+	return c
+}
+
+//  从 ring 删除 client
+func (cr *ClientRing) pop() (*GithubClient, error) {
+	client, err := cr.Pop()
+	if err != nil {
+		return nil, err
+	}
+
+	c, ok := client.(*GithubClient)
+	if !ok {
+		return nil, err
+	}
+
+	return c, nil
+}
+
+// 判断 ring 中的 client 是否有效，ring 中只保留有效的 client
+func (cr *ClientRing) clean() {
+	var (
+		c   *GithubClient
+		err error
+	)
+
+	for {
+		client := cr.get()
+
+		if client.Remaining == empty {
+			c, err = cr.pop()
+			if err != nil {
+				logger.Error("An error occurred while popping the client: ", err)
 			}
 		}
-		if this.Search.Left == empty {
-			if this.Search.ResetIn == empty{
-				this.reset(search)
+
+		if !c.Limited {
+			err = cr.push(c)
+			if err != nil {
+				logger.Error("An error occurred while pushing the client: ", err)
 			}
 		}
 	}
+}
+
+// 生成多个 client 存入 ring 后返回一个 client
+func createClient(tokens []string) (*GithubClient, error) {
+	err := ClientRingService.newClientRing(tokens)
+	if err != nil {
+		logger.Error("An error occurred while creating the client ring: ", err)
+		return nil, err
+	}
+
+	client := ClientRingService.get()
+
+	// TODO： 清理无效的 client
+	go ClientRingService.clean()
+	return client, nil
 }
