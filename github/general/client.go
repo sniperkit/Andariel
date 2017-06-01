@@ -42,7 +42,6 @@ import (
 )
 
 const (
-	empty   = 0
 	unLimit = 1
 )
 
@@ -177,19 +176,17 @@ func (c *GHClient) reset() {
 	if c.rateLimits[coreCategory] != nil {
 		coreTimer := time.NewTimer(c.rateLimits[coreCategory].Reset.Sub(time.Now()))
 		<-coreTimer.C
-		c.rateLimits[coreCategory].Remaining = unLimit
 		c.rateLimits[coreCategory].Limited = false
 	}
 	if c.rateLimits[searchCategory] != nil {
 		searchTimer := time.NewTimer(c.rateLimits[searchCategory].Reset.Sub(time.Now()))
 		<-searchTimer.C
-		c.rateLimits[searchTimer].Remaining = unLimit
-		c.rateLimits[searchTimer].Limited = false
+		c.rateLimits[searchCategory].Limited = false
 	}
 }
 
 // 新建多个 client
-func NewClients(tokens []string) []*GHClient {
+func newClients(tokens []string) []*GHClient {
 	var clients []*GHClient
 
 	for _, t := range tokens {
@@ -200,22 +197,17 @@ func NewClients(tokens []string) []*GHClient {
 	return clients
 }
 
-// 监控 client，将可用的 client 放入 ring
-func (c *GHClient) Monitor() {
-	for {
-		switch {
-		case !c.isLimited():
-			addClient(c)
-		case c.isLimited():
-			popClient()
-		}
-	}
-}
-
 var (
-	ringCap = 50
+	ringCap = 10
 	cRing   *container.Ring
 )
+
+var tokens []string = []string{
+	"54f7488c8f72d3e63692b2bf04167d97e7a29e1d",
+	"5511599ff7aebf94476ce3eda7741ab7ae797ef9",
+	"78d1dcb42b8c4368884603cfcd4f3a1581d771d2",
+	"5df193b89001e9fabfdb947a88cdd8b6e45378f5",
+}
 
 // 存储 client
 func addClient(client interface{}) {
@@ -232,20 +224,34 @@ func addClient(client interface{}) {
 	}
 }
 
-// 获取 client
-func getClient() interface{} {
-	return cRing.Get()
-}
-
-// 删除 client
-func popClient() (interface{}, error) {
+// 获取 client，同时从 ring 中删除此 client
+func GetClient() (interface{}, error) {
 	return cRing.Pop()
 }
 
-// 初始化 clientRing
-func InitCRing(tokens []string) {
-	clients := NewClients(tokens)
-	for _, c := range clients {
-		addClient(c)
+// 将可用的 client 放入 ring
+func addValidClientsToRing(clients []*GHClient) {
+	for {
+		for _, client := range clients {
+			go func() {
+				switch {
+				case !client.isLimited():
+					addClient(client)
+				case client.isLimited():
+					client.reset()
+					addClient(client)
+				}
+			}()
+		}
 	}
+}
+
+// 初始化 clientRing，将有效的 client 放入 ring，无效的
+func initCRing(tokens []string) {
+	clients := newClients(tokens)
+	addValidClientsToRing(clients)
+}
+
+func init() {
+	initCRing(tokens)
 }
