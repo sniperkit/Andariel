@@ -25,36 +25,33 @@
 /*
  * Revision History:
  *     Initial: 2017/04/17        Yusan Kurban
+ *     Update: 2017/05/30         Jia Chenhui
  */
 
 package general
 
 import (
-	"container/ring"
 	"net/http"
 	"time"
 
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 
+	"Andariel/common/container"
 	"Andariel/log"
 )
 
 const (
-	empty              = 0
-	emptyDuration      = time.Duration(0)
-	authCoreLimit      = 5000 //per hour
-	nonAuthCoreLimit   = 60
-	authSearchLimit    = 30 //per minutes
-	nonAuthSearchLimit = 10
+	empty   = 0
+	unLimit = 1
+)
 
-	authClient    = 0x01
-	nonAuthClient = 0x10
+type rateLimitCategory uint8
 
-	CoreType   = "core"
-	SearchType = "search"
-
-	invalidTokenErr = "401 Unauthorized"
+const (
+	coreCategory rateLimitCategory = iota
+	searchCategory
+	categories
 )
 
 var logger *log.AndarielLogger = log.AndarielCreateLogger(
@@ -64,177 +61,136 @@ var logger *log.AndarielLogger = log.AndarielCreateLogger(
 	},
 	log.AndarielLogLevelDefault)
 
-type GithubClient struct {
-	Client  *github.Client
-	LimitAt time.Time
-	Type    int
-	UseType string
-	Rate
+type GHClient struct {
+	Client     *github.Client
+	rateLimits [categories]Rate
 }
 
 type Rate struct {
-	Times     int
 	Limit     int
 	Remaining int
-	Limited   bool
 	Reset     time.Time
-	ResetIn   time.Duration
+	Limited   bool
 }
 
-func newClient(token string) (client *GithubClient) {
+// 新建 client
+func newClient(token string) (client *GHClient) {
 	if token == "" {
-		client = new(GithubClient)
+		client = new(GHClient)
 		tokenSource := new(oauth2.TokenSource)
-		client.Type = nonAuthClient
 		client.init(tokenSource)
-	} else {
-		client = new(GithubClient)
-		tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-		client.Type = authClient
-		client.init(tokenSource)
+		return
 	}
 
-	return client
+	client = new(GHClient)
+	tokenSource := oauth2.StaticTokenSource(token)
+	client.init(tokenSource)
+
+	return
 }
 
-func (gc *GithubClient) init(tokenSource oauth2.TokenSource) {
+// 初始化 client
+func (c *GHClient) init(tokenSource oauth2.TokenSource) {
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
-	client := github.NewClient(httpClient)
-	gc.Client = client
-	if !gc.isValidToken(httpClient) {
+
+	// 检查 token 是否有效
+	if !c.isValidToken(httpClient) {
 		logger.Debug("Invalid token.")
 		return
 	}
 
-	err, _ := gc.requestTimes()
-	if err != nil {
-		logger.Error("Get limits crash with error:", err)
-		return
+	ghClient := github.NewClient(httpClient)
+	c.Client = ghClient
+
+	if c.isLimited() {
+		logger.Debug("Hit rate limit.")
 	}
 }
 
-func (gc *GithubClient) isValidToken(c *http.Client) bool {
-	req, err := gc.Client.NewRequest("GET", "", nil)
+// 检查 token 是否有效
+func (c *GHClient) isValidToken(httpClient *http.Client) bool {
+	resp, err := c.makeRequest(httpClient)
 	if err != nil {
-		logger.Error("crash with:", err)
+		logger.Error("makeRequest returned error:", err)
 		return false
 	}
 
-	resp, err := c.Do(req)
-	if err != nil {
-		logger.Error("crash with:", err)
-		return false
-	}
-
-	if resp.Header.Get("Status") == invalidTokenErr {
-		return false
-	}
-
-	return true
-}
-
-func (gc *GithubClient) onLimit(resp *github.Response) {
-	if resp != nil && resp.Remaining <= 1 {
-		gc.LimitAt = time.Now()
-		gc.Times = resp.Limit - resp.Remaining
-		gc.Limit = resp.Limit
-		gc.Remaining = empty
-		gc.Limited = true
-		gc.ResetIn = resp.Reset.Time.Sub(gc.LimitAt)
-		gc.Reset = resp.Reset.Time
-	}
-}
-
-func (gc *GithubClient) reset(useType string) {
-	if gc.Type == authClient {
-		switch useType {
-		case CoreType:
-			gc.Remaining = authCoreLimit
-		case SearchType:
-			gc.Remaining = authSearchLimit
-		}
-	}
-
-	if gc.Type == nonAuthClient {
-		switch useType {
-		case CoreType:
-			gc.Remaining = nonAuthCoreLimit
-		case SearchType:
-			gc.Remaining = nonAuthSearchLimit
-		}
-	}
-
-	gc.Times = empty
-	gc.Limited = false
-}
-
-func (gc *GithubClient) requestTimes() (error, bool) {
-	rate, _, err := gc.Client.RateLimits(oauth2.NoContext)
-	if err != nil {
-		return err, false
-	}
-
-	// TODO: 此处未分类, 需修改
-	gc.Times = rate.Core.Limit - rate.Core.Remaining
-	gc.Remaining = rate.Core.Remaining
-	gc.Reset = rate.Core.Reset.Time
-	gc.ResetIn = rate.Core.Reset.Sub(time.Now())
-
-	if gc.Remaining != authCoreLimit-1 {
-		return nil, false
-	}
-
-	return nil, true
-}
-
-func (gc *GithubClient) Monitor(useType string, resp *github.Response) {
-	gc.onLimit(resp)
-
-	if gc.Remaining == empty {
-		if gc.Reset.Sub(time.Now()) == emptyDuration {
-			gc.reset(useType)
-		}
-	}
-}
-
-func (gc *GithubClient) CheckLimit() bool {
-	return gc.Limited
-}
-
-func (gc *GithubClient) isValidClient() bool {
-	if gc.Remaining == empty {
+	err = github.CheckResponse(resp)
+	if e, ok := err.(*github.TwoFactorAuthError); ok {
+		logger.Error("401 Unauthorized:", e)
 		return false
 	}
 
 	return true
 }
 
-var tokens []string = []string{
-	"54f7488c8f72d3e63692b2bf04167d97e7a29e1d",
-	"5511599ff7aebf94476ce3eda7741ab7ae797ef9",
-	"78d1dcb42b8c4368884603cfcd4f3a1581d771d2",
-	"5df193b89001e9fabfdb947a88cdd8b6e45378f5",
+// 发起一次 API 请求
+func (c *GHClient) makeRequest(httpClient *http.Client) (*http.Response, error) {
+	req, err := c.Client.NewRequest("GET", c.Client.BaseURL, nil)
+	if err != nil {
+		logger.Error("Client.NewRequest returned error:", err)
+		return nil, err
+	}
+
+	// 发起请求
+	resp, err := httpClient.Do(req)
+	if err != nil {
+		logger.Error("httpClient.Do returned error:", err)
+		return nil, err
+	}
+
+	return resp, nil
 }
 
-type Ring struct {
-	*ring.Ring
+// 检查 rateLimit
+func (c *GHClient) isLimited() bool {
+	rate, _, err := c.Client.RateLimits(oauth2.NoContext)
+	if err != nil {
+		logger.Error("Client.RateLimits returned error:", err)
+		return true
+	}
+
+	if rate != nil {
+		if rate.Core != nil {
+			c.rateLimits[coreCategory] = *rate.Core
+			if rate.Core.Remaining <= unLimit {
+				c.rateLimits[coreCategory].Limited = true
+				return true
+			}
+			return false
+		}
+		if rate.Search != nil {
+			c.rateLimits[searchCategory] = *rate.Search
+			if rate.Search.Remaining <= unLimit {
+				c.rateLimits[searchCategory].Limited = true
+				return true
+			}
+			return false
+		}
+	}
+
+	return true
 }
 
-var (
-	GitClientService  *GithubClient
-	ClientRingService *Ring
-)
-
-func init() {
-	GitClientService = new(GithubClient)
-	ClientRingService = new(Ring)
-
-	ClientRingService.InitClientRing(tokens)
+// 重置 client
+func (c *GHClient) reset() {
+	if c.rateLimits[coreCategory] != nil {
+		coreTimer := time.NewTimer(c.rateLimits[coreCategory].Reset.Sub(time.Now()))
+		<-coreTimer.C
+		c.rateLimits[coreCategory].Remaining = unLimit
+		c.rateLimits[coreCategory].Limited = false
+	}
+	if c.rateLimits[searchCategory] != nil {
+		searchTimer := time.NewTimer(c.rateLimits[searchCategory].Reset.Sub(time.Now()))
+		<-searchTimer.C
+		c.rateLimits[searchTimer].Remaining = unLimit
+		c.rateLimits[searchTimer].Limited = false
+	}
 }
 
-// 生成多个 client
-func NewClients(tokens []string) []GithubClient {
-	var clients []GithubClient
+// 新建多个 client
+func NewClients(tokens []string) []*GHClient {
+	var clients []*GHClient
 
 	for _, t := range tokens {
 		client := newClient(t)
@@ -244,46 +200,52 @@ func NewClients(tokens []string) []GithubClient {
 	return clients
 }
 
-// 将多个 client 放入 ring
-func (r *Ring) PushClients(clients []GithubClient) {
-	ring := ring.New(len(clients))
-
-	for i := 0; i < len(clients); i++ {
-		ring.Value = clients[i]
-		ring = ring.Next()
+// 监控 client，将可用的 client 放入 ring
+func (c *GHClient) Monitor() {
+	for {
+		switch {
+		case !c.isLimited():
+			addClient(c)
+		case c.isLimited():
+			popClient()
+		}
 	}
-
-	r.Ring = ring
 }
 
-// 读取一个 client
-func (r *Ring) ReadClient() *GithubClient {
-	c := r.Ring.Value
+var (
+	ringCap = 50
+	cRing   *container.Ring
+)
 
-	cli, ok := c.(*GithubClient)
-	if !ok {
-		logger.Info("There are no clients in the ring.")
-		return &GithubClient{}
+// 存储 client
+func addClient(client interface{}) {
+	if cRing == nil {
+		cRing = container.NewRing(ringCap)
 	}
 
-	return cli
-}
+	client = client.(*GHClient)
 
-// 读取下个 client
-func (r *Ring) NextClient() *GithubClient {
-	c := r.Ring.Next().Value
-
-	cli, ok := c.(*GithubClient)
-	if !ok {
-		logger.Info("There are no clients in the ring.")
-		return &GithubClient{}
+	if !cRing.Full() {
+		if err := cRing.Push(client); err != nil {
+			logger.Error("Ring.Push returned error:", err)
+		}
 	}
-
-	return cli
 }
 
-// 生成多个 client 放入 ring
-func (r *Ring) InitClientRing(tokens []string) {
+// 获取 client
+func getClient() interface{} {
+	return cRing.Get()
+}
+
+// 删除 client
+func popClient() (interface{}, error) {
+	return cRing.Pop()
+}
+
+// 初始化 clientRing
+func InitCRing(tokens []string) {
 	clients := NewClients(tokens)
-	r.PushClients(clients)
+	for _, c := range clients {
+		addClient(c)
+	}
 }
