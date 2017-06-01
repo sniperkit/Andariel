@@ -32,16 +32,16 @@ package general
 import (
 	"context"
 	"math"
-	"strings"
 	"time"
 
 	"github.com/google/go-github/github"
 
 	"Andariel/common"
+	"Andariel/utility"
 )
 
 // GetRepoByID 根据库 ID 调用 github API 获取库信息
-func GetRepoByID(client *GithubClient, repoID int) (*github.Repository, *github.Response, error) {
+func GetRepoByID(client *GHClient, repoID int) (*github.Repository, *github.Response, error) {
 	repo, resp, err := client.Client.Repositories.GetByID(context.Background(), repoID)
 	if err != nil {
 		if resp == nil {
@@ -61,7 +61,7 @@ func GetRepoByID(client *GithubClient, repoID int) (*github.Repository, *github.
 //	opt := &github.RepositoryListAllOptions{
 //		ListOptions: github.ListOptions{PerPage: 10},
 //	}
-func GetAllRepos(client *GithubClient, opt *github.RepositoryListAllOptions) ([]*github.Repository, *github.Response, error) {
+func GetAllRepos(client *GHClient, opt *github.RepositoryListAllOptions) ([]*github.Repository, *github.Response, error) {
 	var (
 		allRepos []*github.Repository
 		resp     *github.Response
@@ -87,7 +87,7 @@ func GetAllRepos(client *GithubClient, opt *github.RepositoryListAllOptions) ([]
 
 // SearchRepos 按条件从 github 搜索库，受 github API 限制，一次请求只能获取 1000 条记录
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchRepos(client *GithubClient, query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
+func SearchRepos(client *GHClient, query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result []github.Repository
 		repos  *github.RepositoriesSearchResult
@@ -119,7 +119,7 @@ func SearchRepos(client *GithubClient, query string, opt *github.SearchOptions) 
 
 	// 获取 query 中的时间字符串，以便下次时请求从这个时间开始
 	if len(result) != 0 {
-		stopAt = SplitQuery(query)
+		stopAt = util.SplitQuery(query)
 	} else {
 		stopAt = ""
 	}
@@ -144,7 +144,7 @@ func SearchRepos(client *GithubClient, query string, opt *github.SearchOptions) 
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchReposByCreated(client *GithubClient, queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
+func SearchReposByCreated(client *GHClient, queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result, repos []github.Repository
 		resp          *github.Response
@@ -188,7 +188,7 @@ func SearchReposByCreated(client *GithubClient, queries []string, querySeg strin
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchReposByStartTime(client *GithubClient, year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
+func SearchReposByStartTime(client *GHClient, year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result, repos []github.Repository
 		resp          *github.Response
@@ -252,12 +252,4 @@ func Wait(resp *github.Response) {
 
 		time.Sleep(sleep)
 	}
-}
-
-// 解析传入的 query 字符串，得到最后请求时间
-func SplitQuery(query string) string {
-	dateSlice := strings.SplitAfter(query, ".. ")[1]
-	dateStr := strings.Split(dateSlice, "\"")[0]
-
-	return dateStr
 }
