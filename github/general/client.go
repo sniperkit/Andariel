@@ -37,7 +37,6 @@ import (
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 
-	"Andariel/common/container"
 	"Andariel/log"
 )
 
@@ -197,11 +196,6 @@ func newClients(tokens []string) []*GHClient {
 	return clients
 }
 
-var (
-	ringCap = 10
-	cRing   *container.Ring
-)
-
 var tokens []string = []string{
 	"54f7488c8f72d3e63692b2bf04167d97e7a29e1d",
 	"5511599ff7aebf94476ce3eda7741ab7ae797ef9",
@@ -209,49 +203,48 @@ var tokens []string = []string{
 	"5df193b89001e9fabfdb947a88cdd8b6e45378f5",
 }
 
-// 存储 client
-func addClient(client interface{}) {
-	if cRing == nil {
-		cRing = container.NewRing(ringCap)
-	}
+type RingBuffer struct {
+	inputChan  <-chan *GHClient
+	outputChan chan *GHClient
+}
 
-	client = client.(*GHClient)
+func NewRingBuffer(inputChan <-chan GHClient, outputChan chan GHClient) *RingBuffer {
+	return &RingBuffer{inputChan, outputChan}
+}
 
-	if !cRing.Full() {
-		if err := cRing.Push(client); err != nil {
-			logger.Error("Ring.Push returned error:", err)
+func (r *RingBuffer) Run() {
+	for v := range r.inputChan {
+		select {
+		case r.outputChan <- v:
+		default:
+			<-r.outputChan
+			r.outputChan <- v
 		}
 	}
+	close(r.outputChan)
 }
 
-// 获取 client，同时从 ring 中删除此 client
-func GetClient() (interface{}, error) {
-	return cRing.Pop()
-}
+// manageClient 生成多个 client 并返回可用的 client
+func manageClient() func() GHClient {
+	in := make(chan GHClient)
+	out := make(chan GHClient, len(tokens))
+	rb := NewRingBuffer(in, out)
+	go rb.Run()
 
-// 将可用的 client 放入 ring
-func addValidClientsToRing(clients []*GHClient) {
-	for {
-		for _, client := range clients {
-			go func() {
-				switch {
-				case !client.isLimited():
-					addClient(client)
-				case client.isLimited():
-					client.reset()
-					addClient(client)
-				}
-			}()
-		}
-	}
-}
-
-// 初始化 clientRing，将有效的 client 放入 ring，无效的
-func initCRing(tokens []string) {
 	clients := newClients(tokens)
-	addValidClientsToRing(clients)
-}
 
-func init() {
-	initCRing(tokens)
+	for _, client := range clients {
+		// TODO: 无效 client 的处理
+		if !client.isLimited() {
+			in <- client
+		}
+	}
+	close(in)
+
+	return func() GHClient {
+		select {
+		case c := <-out:
+			return c
+		}
+	}
 }
