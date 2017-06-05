@@ -204,8 +204,8 @@ var tokens []string = []string{
 }
 
 type RingBuffer struct {
-	inputChan  <-chan *GHClient
-	outputChan chan *GHClient
+	inputChan  <-chan GHClient
+	outputChan chan GHClient
 }
 
 func NewRingBuffer(inputChan <-chan GHClient, outputChan chan GHClient) *RingBuffer {
@@ -225,26 +225,34 @@ func (r *RingBuffer) Run() {
 }
 
 // manageClient 生成多个 client 并返回可用的 client
-func manageClient() func() GHClient {
+// 返回的 done 用来阻塞调用此函数的进程，除非此函数中的 goroutine 都完成
+func manageClient() (func() GHClient, chan bool) {
 	in := make(chan GHClient)
 	out := make(chan GHClient, len(tokens))
 	rb := NewRingBuffer(in, out)
 	go rb.Run()
 
 	clients := newClients(tokens)
+	done := make(chan bool)
 
-	for _, client := range clients {
-		// TODO: 无效 client 的处理
-		if !client.isLimited() {
-			in <- client
+	go func() {
+		for _, client := range clients {
+			if !client.isLimited() {
+				in <- client
+			}
+			if client.isLimited() {
+				client.reset()
+			}
 		}
-	}
-	close(in)
+
+		done <- true
+		close(in)
+	}()
 
 	return func() GHClient {
 		select {
 		case c := <-out:
 			return c
 		}
-	}
+	}, done
 }
