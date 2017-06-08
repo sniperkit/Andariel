@@ -61,7 +61,7 @@ var logger *log.AndarielLogger = log.AndarielCreateLogger(
 
 type GHClient struct {
 	Client     *github.Client
-	rateLimits [categories]Rate
+	rateLimits [categories]*Rate
 	manager    *ClientManager
 	timer      *time.Timer
 }
@@ -78,12 +78,12 @@ func newClient(token string) (client *GHClient) {
 	if token == "" {
 		client = new(GHClient)
 		tokenSource := new(oauth2.TokenSource)
-		client.init(tokenSource)
+		client.init(*tokenSource)
 		return
 	}
 
 	client = new(GHClient)
-	tokenSource := oauth2.StaticTokenSource(token)
+	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
 	client.init(tokenSource)
 
 	return
@@ -126,7 +126,7 @@ func (c *GHClient) isValidToken(httpClient *http.Client) bool {
 
 // 发起一次 API 请求
 func (c *GHClient) makeRequest(httpClient *http.Client) (*http.Response, error) {
-	req, err := c.Client.NewRequest("GET", c.Client.BaseURL, nil)
+	req, err := c.Client.NewRequest("GET", c.Client.BaseURL.Path, nil)
 	if err != nil {
 		logger.Error("Client.NewRequest returned error:", err)
 		return nil, err
@@ -152,7 +152,9 @@ func (c *GHClient) isLimited() bool {
 
 	if rate != nil {
 		if rate.Core != nil {
-			c.rateLimits[coreCategory] = *rate.Core
+			c.rateLimits[coreCategory].Limit = rate.Core.Limit
+			c.rateLimits[coreCategory].Remaining = rate.Core.Remaining
+			c.rateLimits[coreCategory].Reset = rate.Core.Reset.Time
 			if rate.Core.Remaining <= unLimit {
 				c.rateLimits[coreCategory].Limited = true
 				return true
@@ -160,7 +162,9 @@ func (c *GHClient) isLimited() bool {
 			return false
 		}
 		if rate.Search != nil {
-			c.rateLimits[searchCategory] = *rate.Search
+			c.rateLimits[searchCategory].Limit = rate.Search.Limit
+			c.rateLimits[searchCategory].Remaining = rate.Search.Remaining
+			c.rateLimits[searchCategory].Reset = rate.Search.Reset.Time
 			if rate.Search.Remaining <= unLimit {
 				c.rateLimits[searchCategory].Limited = true
 				return true
@@ -225,8 +229,8 @@ func (r *ClientManager) Run(done chan bool) {
 // NewClientManager 创建新的 ClientManager
 func NewClientManager() *ClientManager {
 	var rb *ClientManager = &ClientManager{
-		inputChan:  make(chan GHClient),
-		OutputChan: make(chan GHClient, len(tokens)),
+		inputChan:  make(chan *GHClient),
+		OutputChan: make(chan *GHClient, len(tokens)),
 	}
 
 	clients := newClients(tokens)
