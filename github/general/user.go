@@ -38,8 +38,8 @@ import (
 )
 
 // 调用 API 获取作者信息
-func GetOwnerByID(ownerID int) (*models.MDUser, *github.Response, error) {
-	owner, resp, err := GitClient.Client.Users.GetByID(context.Background(), ownerID)
+func GetOwnerByID(ownerID int, client *GHClient) (*models.MDUser, *github.Response, error) {
+	owner, resp, err := client.Client.Users.GetByID(context.Background(), ownerID)
 	if err != nil {
 		if resp == nil {
 			return nil, nil, err
