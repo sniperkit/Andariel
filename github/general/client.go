@@ -103,7 +103,7 @@ func (c *GHClient) init(tokenSource oauth2.TokenSource) {
 	c.Client = ghClient
 
 	if c.isLimited() {
-		logger.Debug("Hit rate limit.")
+		logger.Debug("Hit rate limit while initializing the client.")
 	}
 }
 
@@ -206,17 +206,17 @@ var tokens []string = []string{
 }
 
 type ClientManager struct {
-	inputChan  chan GHClient
-	OutputChan chan GHClient
+	inputChan  chan *GHClient
+	OutputChan chan *GHClient
 }
 
-func (r *ClientManager) Run() {
-	for v := range r.inputChan {
+func (r *ClientManager) Run(done chan bool) {
+	for {
 		select {
-		case r.OutputChan <- v:
-		default:
-			<-r.OutputChan
+		case v := <-r.inputChan:
 			r.OutputChan <- v
+		case <-done:
+			break
 		}
 	}
 	close(r.OutputChan)
@@ -225,13 +225,17 @@ func (r *ClientManager) Run() {
 // NewClientManager 创建新的 ClientManager
 func NewClientManager() *ClientManager {
 	var rb *ClientManager = &ClientManager{
-		inputChan:  make(chan GHClient, len(tokens)),
+		inputChan:  make(chan GHClient),
 		OutputChan: make(chan GHClient, len(tokens)),
 	}
 
 	clients := newClients(tokens)
+	done := make(chan bool)
+	defer func() {
+		done <- true
+	}()
 
-	go rb.Run()
+	go rb.Run(done)
 	go func() {
 		for _, c := range clients {
 			if !c.isLimited() {
@@ -244,7 +248,7 @@ func NewClientManager() *ClientManager {
 }
 
 // GetClient 读取 client
-func (m *ClientManager) GetClient() GHClient {
+func (m *ClientManager) GetClient() *GHClient {
 	select {
 	case c := <-m.OutputChan:
 		return c
@@ -257,9 +261,6 @@ func PutClient(client *GHClient) {
 	<-client.timer.C
 
 	select {
-	case client.manager.inputChan <- *client:
-	default:
-		<-client.manager.inputChan
-		client.manager.inputChan <- *client
+	case client.manager.inputChan <- client:
 	}
 }
