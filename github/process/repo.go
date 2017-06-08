@@ -38,7 +38,7 @@ import (
 )
 
 // 逻辑判断后，存储库信息到数据库
-func StoreRepo(repo *github.Repository) error {
+func StoreRepo(repo *github.Repository, client *git.GHClient) error {
 	// 判断数据库中是否有此作者信息
 	oldUserID, err := models.GitUserService.GetUserID(repo.Owner.Login)
 	if err != nil {
@@ -47,8 +47,7 @@ func StoreRepo(repo *github.Repository) error {
 		}
 
 		// MDUser 数据库中无此作者信息
-		newOwner, resp, err := git.GetOwnerByID(*repo.Owner.ID)
-		git.Wait(resp)
+		newOwner, _, err := git.GetOwnerByID(*repo.Owner.ID, client)
 		if err != nil {
 			return err
 		}
