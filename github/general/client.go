@@ -62,6 +62,8 @@ var logger *log.AndarielLogger = log.AndarielCreateLogger(
 type GHClient struct {
 	Client     *github.Client
 	rateLimits [categories]Rate
+	manager    *ClientManager
+	timer      *time.Timer
 }
 
 type Rate struct {
@@ -170,17 +172,17 @@ func (c *GHClient) isLimited() bool {
 	return true
 }
 
-// 重置 client
-func (c *GHClient) reset() {
+// 初始化 client 的 timer
+func (c *GHClient) initTimer() {
 	if c.rateLimits[coreCategory] != nil {
 		coreTimer := time.NewTimer(c.rateLimits[coreCategory].Reset.Sub(time.Now()))
-		<-coreTimer.C
-		c.rateLimits[coreCategory].Limited = false
+		c.timer = coreTimer
+		return
 	}
 	if c.rateLimits[searchCategory] != nil {
 		searchTimer := time.NewTimer(c.rateLimits[searchCategory].Reset.Sub(time.Now()))
-		<-searchTimer.C
-		c.rateLimits[searchCategory].Limited = false
+		c.timer = searchTimer
+		return
 	}
 }
 
@@ -203,56 +205,61 @@ var tokens []string = []string{
 	"5df193b89001e9fabfdb947a88cdd8b6e45378f5",
 }
 
-type RingBuffer struct {
-	inputChan  <-chan GHClient
-	outputChan chan GHClient
+type ClientManager struct {
+	inputChan  chan GHClient
+	OutputChan chan GHClient
 }
 
-func NewRingBuffer(inputChan <-chan GHClient, outputChan chan GHClient) *RingBuffer {
-	return &RingBuffer{inputChan, outputChan}
-}
-
-func (r *RingBuffer) Run() {
+func (r *ClientManager) Run() {
 	for v := range r.inputChan {
 		select {
-		case r.outputChan <- v:
+		case r.OutputChan <- v:
 		default:
-			<-r.outputChan
-			r.outputChan <- v
+			<-r.OutputChan
+			r.OutputChan <- v
 		}
 	}
-	close(r.outputChan)
+	close(r.OutputChan)
 }
 
-// manageClient 生成多个 client 并返回可用的 client
-// 返回的 done 用来阻塞调用此函数的进程，除非此函数中的 goroutine 都完成
-func manageClient() (func() GHClient, chan bool) {
-	in := make(chan GHClient)
-	out := make(chan GHClient, len(tokens))
-	rb := NewRingBuffer(in, out)
-	go rb.Run()
+// NewClientManager 创建新的 ClientManager
+func NewClientManager() *ClientManager {
+	var rb *ClientManager = &ClientManager{
+		inputChan:  make(chan GHClient, len(tokens)),
+		OutputChan: make(chan GHClient, len(tokens)),
+	}
 
 	clients := newClients(tokens)
-	done := make(chan bool)
 
+	go rb.Run()
 	go func() {
-		for _, client := range clients {
-			if !client.isLimited() {
-				in <- client
-			}
-			if client.isLimited() {
-				client.reset()
+		for _, c := range clients {
+			if !c.isLimited() {
+				rb.inputChan <- c
 			}
 		}
-
-		done <- true
-		close(in)
 	}()
 
-	return func() GHClient {
-		select {
-		case c := <-out:
-			return c
-		}
-	}, done
+	return rb
+}
+
+// GetClient 读取 client
+func (m *ClientManager) GetClient() GHClient {
+	select {
+	case c := <-m.OutputChan:
+		return c
+	}
+}
+
+// PutClient 将 client 放回 manager
+func PutClient(client *GHClient) {
+	client.initTimer()
+	<-client.timer.C
+
+	select {
+	case client.manager.inputChan <- *client:
+	default:
+		<-client.manager.inputChan
+		client.manager.inputChan <- *client
+	}
 }
