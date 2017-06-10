@@ -126,7 +126,7 @@ func (c *GHClient) isValidToken(httpClient *http.Client) bool {
 
 // 发起一次 API 请求
 func (c *GHClient) makeRequest(httpClient *http.Client) (*http.Response, error) {
-	req, err := c.Client.NewRequest("GET", c.Client.BaseURL.Path, nil)
+	req, err := c.Client.NewRequest("GET", "", nil)
 	if err != nil {
 		logger.Error("Client.NewRequest returned error:", err)
 		return nil, err
