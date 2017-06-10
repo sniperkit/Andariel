@@ -256,6 +256,8 @@ func (m *ClientManager) GetClient() *GHClient {
 	select {
 	case c := <-m.OutputChan:
 		return c
+	default:
+		return nil
 	}
 }
 
