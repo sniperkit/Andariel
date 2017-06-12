@@ -44,8 +44,8 @@ func SplitQuery(query string) string {
 }
 
 // SplitDate 解析返回的 stopAt 字符串，得到具体年月日
-// startAt:
-//     "2006-03-04"
+// stopAt:
+//     "2006-01-02"
 func SplitDate(stopAt string) ([]int, error) {
 	dateSlice := strings.Split(stopAt, "-")
 
@@ -59,7 +59,7 @@ func SplitDate(stopAt string) ([]int, error) {
 
 // DateConv 将字符串转换为 int
 // dates:
-//     ["2006", "03", "04"]
+//     ["2006", "01", "02"]
 func StrToInt(dates []string) ([]int, error) {
 	var datesInt []int
 
