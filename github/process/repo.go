@@ -30,12 +30,25 @@
 package process
 
 import (
+	"time"
+
 	"github.com/google/go-github/github"
 	"gopkg.in/mgo.v2"
 
 	git "Andariel/github/general"
+	"Andariel/log"
 	"Andariel/models"
+	"Andariel/utility"
 )
+
+var logger *log.AndarielLogger = log.AndarielCreateLogger(
+	&log.AndarielLogTag{
+		log.LogTagService: "github",
+		log.LogTagType:    "process",
+	},
+	log.AndarielLogLevelDefault)
+
+var ClientManager *git.ClientManager = git.NewClientManager()
 
 // 逻辑判断后，存储库信息到数据库
 func StoreRepo(repo *github.Repository, client *git.GHClient) error {
@@ -70,4 +83,73 @@ func StoreRepo(repo *github.Repository, client *git.GHClient) error {
 	}
 
 	return nil
+}
+
+// SearchRepos 从指定时间（库的创建时间）开始搜索，并将结果保存到数据库
+func SearchRepos(year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) {
+	client := ClientManager.GetClient()
+
+search:
+	repos, resp, stopAt, err := git.SearchReposByStartTime(client, year, month, day, incremental, querySeg, opt)
+	if err != nil {
+		logger.Error("SearchReposByStartTime returned error:", err)
+		return
+	}
+
+	// 将获取的库存储到数据库
+	for _, repo := range repos {
+		err = StoreRepo(&repo, client)
+		if err != nil {
+			logger.Error("StoreRepo returned error:", err)
+			return
+		}
+	}
+
+	// 判断 client 是否遇到速率限制并将该 client 放回 ClientManager，切换到下个 client 继续执行任务
+	if resp != nil && resp.Remaining <= 1 {
+		go git.PutClient(client)
+
+		client = ClientManager.GetClient()
+
+		if stopAt != "" {
+			newDate, err := util.SplitDate(stopAt)
+			if err != nil {
+				logger.Error("SplitDate returned error:", err)
+			}
+			year = newDate[0]
+			month = newDate[1]
+			switch month {
+			case 1:
+				month = time.January
+			case 2:
+				month = time.February
+			case 3:
+				month = time.March
+			case 4:
+				month = time.April
+			case 5:
+				month = time.May
+			case 6:
+				month = time.June
+			case 7:
+				month = time.July
+			case 8:
+				month = time.August
+			case 9:
+				month = time.September
+			case 10:
+				month = time.October
+			case 11:
+				month = time.November
+			case 12:
+				month = time.December
+			}
+			day = newDate[2]
+		} else {
+			logger.Error("stopAt is empty string")
+			return
+		}
+
+		goto search
+	}
 }
