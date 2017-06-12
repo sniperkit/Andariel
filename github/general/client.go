@@ -210,27 +210,27 @@ var tokens []string = []string{
 }
 
 type ClientManager struct {
-	inputChan  chan *GHClient
-	OutputChan chan *GHClient
+	reclaim  chan *GHClient
+	Dispatch chan *GHClient
 }
 
 func (r *ClientManager) Run(done chan bool) {
 	for {
 		select {
-		case v := <-r.inputChan:
-			r.OutputChan <- v
+		case v := <-r.reclaim:
+			r.Dispatch <- v
 		case <-done:
 			break
 		}
 	}
-	close(r.OutputChan)
+	close(r.Dispatch)
 }
 
 // NewClientManager 创建新的 ClientManager
 func NewClientManager() *ClientManager {
 	var rb *ClientManager = &ClientManager{
-		inputChan:  make(chan *GHClient),
-		OutputChan: make(chan *GHClient, len(tokens)),
+		reclaim:  make(chan *GHClient),
+		Dispatch: make(chan *GHClient, len(tokens)),
 	}
 
 	clients := newClients(tokens)
@@ -243,7 +243,7 @@ func NewClientManager() *ClientManager {
 	go func() {
 		for _, c := range clients {
 			if !c.isLimited() {
-				rb.inputChan <- c
+				rb.reclaim <- c
 			}
 		}
 	}()
@@ -254,7 +254,7 @@ func NewClientManager() *ClientManager {
 // GetClient 读取 client
 func (m *ClientManager) GetClient() *GHClient {
 	select {
-	case c := <-m.OutputChan:
+	case c := <-m.Dispatch:
 		return c
 	default:
 		return nil
@@ -267,6 +267,6 @@ func PutClient(client *GHClient) {
 	<-client.timer.C
 
 	select {
-	case client.manager.inputChan <- client:
+	case client.manager.reclaim <- client:
 	}
 }
