@@ -117,8 +117,8 @@ search:
 				logger.Error("SplitDate returned error:", err)
 			}
 			year = newDate[0]
-			month = newDate[1]
-			switch month {
+			monthInt := newDate[1]
+			switch monthInt {
 			case 1:
 				month = time.January
 			case 2:
