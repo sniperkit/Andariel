@@ -31,7 +31,9 @@
 package general
 
 import (
+	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -61,7 +63,7 @@ var logger *log.AndarielLogger = log.AndarielCreateLogger(
 
 type GHClient struct {
 	Client     *github.Client
-	rateLimits [categories]*Rate
+	rateLimits [categories]Rate
 	manager    *ClientManager
 	timer      *time.Timer
 }
@@ -70,7 +72,6 @@ type Rate struct {
 	Limit     int
 	Remaining int
 	Reset     time.Time
-	Limited   bool
 }
 
 // 新建 client
@@ -92,15 +93,14 @@ func newClient(token string) (client *GHClient) {
 // 初始化 client
 func (c *GHClient) init(tokenSource oauth2.TokenSource) {
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
+	ghClient := github.NewClient(httpClient)
+	c.Client = ghClient
 
 	// 检查 token 是否有效
 	if !c.isValidToken(httpClient) {
 		logger.Debug("Invalid token.")
 		return
 	}
-
-	ghClient := github.NewClient(httpClient)
-	c.Client = ghClient
 
 	if c.isLimited() {
 		logger.Debug("Hit rate limit while initializing the client.")
@@ -144,31 +144,30 @@ func (c *GHClient) makeRequest(httpClient *http.Client) (*http.Response, error) 
 
 // 检查 rateLimit
 func (c *GHClient) isLimited() bool {
-	rate, _, err := c.Client.RateLimits(oauth2.NoContext)
+	rate, _, err := c.Client.RateLimits(context.Background())
 	if err != nil {
 		logger.Error("Client.RateLimits returned error:", err)
 		return true
 	}
 
-	if rate != nil {
-		if rate.Core != nil {
-			c.rateLimits[coreCategory].Limit = rate.Core.Limit
-			c.rateLimits[coreCategory].Remaining = rate.Core.Remaining
-			c.rateLimits[coreCategory].Reset = rate.Core.Reset.Time
-			if rate.Core.Remaining <= unLimit {
-				c.rateLimits[coreCategory].Limited = true
-				return true
-			}
+	response := new(struct {
+		Resource *github.RateLimits `json:"resource"`
+	})
+	response.Resource = rate
+
+	if response.Resource != nil {
+		c.rateMu.Lock()
+		defer c.rateMu.Unlock()
+		if response.Resource.Core != nil {
+			c.rateLimits[coreCategory].Limit = response.Resource.Core.Limit
+			c.rateLimits[coreCategory].Remaining = response.Resource.Core.Remaining
+			c.rateLimits[coreCategory].Reset = response.Resource.Core.Reset.Time
 			return false
 		}
-		if rate.Search != nil {
-			c.rateLimits[searchCategory].Limit = rate.Search.Limit
-			c.rateLimits[searchCategory].Remaining = rate.Search.Remaining
-			c.rateLimits[searchCategory].Reset = rate.Search.Reset.Time
-			if rate.Search.Remaining <= unLimit {
-				c.rateLimits[searchCategory].Limited = true
-				return true
-			}
+		if response.Resource.Search != nil {
+			c.rateLimits[searchCategory].Remaining = response.Resource.Search.Remaining
+			c.rateLimits[searchCategory].Limit = response.Resource.Search.Limit
+			c.rateLimits[searchCategory].Reset = response.Resource.Search.Reset.Time
 			return false
 		}
 	}
@@ -178,12 +177,13 @@ func (c *GHClient) isLimited() bool {
 
 // 初始化 client 的 timer
 func (c *GHClient) initTimer() {
-	if c.rateLimits[coreCategory] != nil {
+	var empty = Rate{}
+	if c.rateLimits[coreCategory] != empty {
 		coreTimer := time.NewTimer(c.rateLimits[coreCategory].Reset.Sub(time.Now()))
 		c.timer = coreTimer
 		return
 	}
-	if c.rateLimits[searchCategory] != nil {
+	if c.rateLimits[searchCategory] != empty {
 		searchTimer := time.NewTimer(c.rateLimits[searchCategory].Reset.Sub(time.Now()))
 		c.timer = searchTimer
 		return
