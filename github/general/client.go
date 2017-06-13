@@ -66,6 +66,7 @@ type GHClient struct {
 	rateLimits [categories]Rate
 	manager    *ClientManager
 	timer      *time.Timer
+	rateMu     sync.Mutex
 }
 
 type Rate struct {
