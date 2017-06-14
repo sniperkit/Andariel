@@ -93,9 +93,14 @@ search:
 	repos, resp, stopAt, err := git.SearchReposByStartTime(client, year, month, day, incremental, querySeg, opt)
 	if err != nil {
 		logger.Error("SearchReposByStartTime returned error:", err)
-		return
+		if _, ok := err.(*github.RateLimitError); ok {
+			goto store
+		} else {
+			return
+		}
 	}
 
+store:
 	// 将获取的库存储到数据库
 	for _, repo := range repos {
 		err = StoreRepo(&repo, client)
