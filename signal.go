@@ -33,7 +33,7 @@ import (
 	"syscall"
 	"os"
 
-	"Andariel/interrupt"
+	"Andariel/pkg/interrupt"
 )
 
 var (

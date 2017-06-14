@@ -27,7 +27,7 @@
  *     Initial: 28/04/2017        Jia Chenhui
  */
 
-package general
+package github
 
 import (
 	"context"
@@ -37,7 +37,7 @@ import (
 	"github.com/google/go-github/github"
 
 	"Andariel/common"
-	"Andariel/utility"
+	"Andariel/pkg/utility"
 )
 
 // GetRepoByID 根据库 ID 调用 github API 获取库信息

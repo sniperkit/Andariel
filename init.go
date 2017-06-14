@@ -30,9 +30,9 @@
 package main
 
 import (
-	"Andariel/log"
-	"Andariel/interrupt"
-	"Andariel/mongo"
+	"Andariel/pkg/log"
+	"Andariel/pkg/interrupt"
+	"Andariel/pkg/mongo"
 )
 
 var logger *log.AndarielLogger = log.AndarielCreateLogger(

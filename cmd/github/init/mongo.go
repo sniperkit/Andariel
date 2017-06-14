@@ -24,34 +24,16 @@
 
 /*
  * Revision History:
- *     Initial: 12/05/2017        Jia Chenhui
+ *     Initial: 02/05/2017        Jia Chenhui
  */
 
-package main
+package init
 
 import (
-	"os"
-	"syscall"
-
-	"Andariel/interrupt"
+	"Andariel/models"
 )
 
-var (
-	sigHandler *interrupt.Handler
-)
-
-func finalHandler(sig os.Signal) {
-	switch sig {
-	case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-		logger.Info("Signal quit/term/int captured")
-		return
-
-	case syscall.SIGHUP:
-		logger.Info("Signal hup captured")
-		return
-
-	case syscall.SIGALRM:
-		logger.Info("Signal alrm captured")
-		return
-	}
+func InitMongoCollections(colName string) {
+	models.PrepareGitRepos(colName)
+	models.PrepareGitUser()
 }

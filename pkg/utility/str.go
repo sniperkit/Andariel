@@ -27,7 +27,7 @@
  *     Initial: 2017/05/26        Jia Chenhui
  */
 
-package util
+package utility
 
 import (
 	"strconv"

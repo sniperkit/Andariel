@@ -24,48 +24,34 @@
 
 /*
  * Revision History:
- *     Initial: 28/04/2017        Jia Chenhui
+ *     Initial: 12/05/2017        Jia Chenhui
  */
 
-package general
+package main
 
 import (
-	"context"
+	"os"
+	"syscall"
 
-	"github.com/google/go-github/github"
-
-	"Andariel/models"
+	"Andariel/pkg/interrupt"
 )
 
-// 调用 API 获取作者信息
-func GetOwnerByID(ownerID int, client *GHClient) (*models.MDUser, *github.Response, error) {
-	owner, resp, err := client.Client.Users.GetByID(context.Background(), ownerID)
-	if err != nil {
-		if resp == nil {
-			return nil, nil, err
-		}
+var (
+	sigHandler *interrupt.Handler
+)
 
-		return nil, resp, err
+func finalHandler(sig os.Signal) {
+	switch sig {
+	case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
+		logger.Info("Signal quit/term/int captured")
+		return
+
+	case syscall.SIGHUP:
+		logger.Info("Signal hup captured")
+		return
+
+	case syscall.SIGALRM:
+		logger.Info("Signal alrm captured")
+		return
 	}
-
-	user := &models.MDUser{
-		Login:             owner.Login,
-		ID:                owner.ID,
-		HTMLURL:           owner.HTMLURL,
-		Name:              owner.Name,
-		Email:             owner.Email,
-		PublicRepos:       owner.PublicRepos,
-		PublicGists:       owner.PublicGists,
-		Followers:         owner.Followers,
-		Following:         owner.Following,
-		CreatedAt:         owner.CreatedAt,
-		UpdatedAt:         owner.UpdatedAt,
-		SuspendedAt:       owner.SuspendedAt,
-		Type:              owner.Type,
-		TotalPrivateRepos: owner.TotalPrivateRepos,
-		OwnedPrivateRepos: owner.OwnedPrivateRepos,
-		PrivateGists:      owner.PrivateGists,
-	}
-
-	return user, resp, nil
 }

@@ -24,47 +24,30 @@
 
 /*
  * Revision History:
- *     Initial: 10/05/2017        Jia Chenhui
+ *     Initial: 12/05/2017        Jia Chenhui
  */
 
-package common
+package main
 
-const (
-	// 按条件搜索 GitHub 库时的 query 类型
-	QueryLanguage = "language"
-	QueryCreated  = "created"
-
-	// 搜索 GitHub 库时的指定语言类型(collection 名称)
-	LangC      = "C"
-	LangCSharp = "C#"
-	LangCPlus  = "C++"
-	LangCSS    = "CSS"
-	LangGo     = "Go"
-	LangHTML   = "HTML"
-	LangJava   = "Java"
-	LangJS     = "JavaScript"
-	LangLua    = "Lua"
-	LangObjC   = "Objective-C"
-	LangPHP    = "PHP"
-	LangPython = "Python"
-	LangR      = "R"
-	LangRuby   = "Ruby"
-	LangScala  = "Scala"
-	LangShell  = "Shell"
-	LangSwift  = "Swift"
-
-	// 对 GitHub 库搜索结果的排序方式
-	SortByStars   = "stars"
-	SortByForks   = "forks"
-	SortByUpdated = "updated"
-
-	// 对 GitHub 库搜索结果的排序顺序(增/减)
-	OrderByAsc  = "asc"
-	OrderByDesc = "desc"
-
-	// 搜索库时指定的时间增量
-	OneQuarter = "quarter"
-	OneMonth   = "month"
-	OneWeek    = "week"
-	OneDay     = "day"
+import (
+	"Andariel/pkg/interrupt"
+	"Andariel/pkg/log"
+	"Andariel/pkg/mongo"
 )
+
+var logger *log.AndarielLogger = log.AndarielCreateLogger(
+	&log.AndarielLogTag{
+		log.LogTagService: "main",
+		log.LogTagType:    "main",
+	},
+	log.AndarielLogLevelDefault)
+
+func init() {
+	sigHandler = interrupt.New(finalHandler, func() {})
+	logger.Debug("Interrupt handler initialized")
+
+	readConfiguration()
+
+	mongo.InitGithub(configuration.MongoUrl)
+	logger.Debug("The MongoDB of GitHub connected.")
+}

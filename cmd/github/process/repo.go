@@ -35,10 +35,10 @@ import (
 	"github.com/google/go-github/github"
 	"gopkg.in/mgo.v2"
 
-	git "Andariel/github/general"
-	"Andariel/log"
+	git "Andariel/pkg/github"
+	"Andariel/pkg/log"
 	"Andariel/models"
-	"Andariel/utility"
+	"Andariel/pkg/utility"
 )
 
 var logger *log.AndarielLogger = log.AndarielCreateLogger(
@@ -117,7 +117,7 @@ store:
 		client = ClientManager.GetClient()
 
 		if stopAt != "" {
-			newDate, err := util.SplitDate(stopAt)
+			newDate, err := utility.SplitDate(stopAt)
 			if err != nil {
 				logger.Error("SplitDate returned error:", err)
 			}

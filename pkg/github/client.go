@@ -28,7 +28,7 @@
  *     Update: 2017/05/30         Jia Chenhui
  */
 
-package general
+package github
 
 import (
 	"context"
