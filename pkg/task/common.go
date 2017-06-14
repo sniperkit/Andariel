@@ -32,13 +32,10 @@ package task
 const (
 	TaskSize = 10
 
-	TaskSpiderPopular  = 0x01
-	TaskSpiderTrending = 0x02
-	TaskGetPopular     = 0x03
 	TaskGetTrending    = 0x04
 
-	TaskUnexecuted = 1
-	TaskExecuting  = 2
+	TaskSuspend 	= 1
+	TaskExecuted  	= 2
 
 	MDbName            = "github"
 	MDColl             = "task"

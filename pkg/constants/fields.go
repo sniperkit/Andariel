@@ -30,11 +30,9 @@
 package constants
 
 const (
-	// 按条件搜索 GitHub 库时的 query 类型
-	QueryLanguage = "language"
-	QueryCreated  = "created"
+	QueryCondLanguage = "language"
+	QueryCondCreated  = "created"
 
-	// 搜索 GitHub 库时的指定语言类型(collection 名称)
 	LangC      = "C"
 	LangCSharp = "C#"
 	LangCPlus  = "C++"
@@ -53,18 +51,15 @@ const (
 	LangShell  = "Shell"
 	LangSwift  = "Swift"
 
-	// 对 GitHub 库搜索结果的排序方式
 	SortByStars   = "stars"
 	SortByForks   = "forks"
 	SortByUpdated = "updated"
 
-	// 对 GitHub 库搜索结果的排序顺序(增/减)
 	OrderByAsc  = "asc"
 	OrderByDesc = "desc"
 
-	// 搜索库时指定的时间增量
-	OneQuarter = "quarter"
-	OneMonth   = "month"
-	OneWeek    = "week"
-	OneDay     = "day"
+	Quarter = "quarter"
+	Month   = "month"
+	Week    = "week"
+	Day     = "day"
 )

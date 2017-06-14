@@ -36,7 +36,7 @@ import (
 type Worker struct {
     server      *Server
     tchan       chan Task
-    task        Task
+    task        *Task
 }
 
 func (this *Worker) Run() {

@@ -4,23 +4,22 @@ import (
 	"gopkg.in/mgo.v2"
 )
 
-var (
-	GithubSession *mgo.Session
-)
-
-const (
-	MDGitName = "github"
-)
+type Session struct {
+	MongoSession *mgo.Session
+}
 
 // 初始化 MongoDB 连接
-func InitGithub(url string) {
-	var err error
-	GithubSession, err = mgo.Dial(url)
+func InitGithub(url string) *Session {
+	ses, err := mgo.Dial(url)
 
 	if err != nil {
 		panic(err)
 	}
 
 	// 利用 MongoDB 分布性特性
-	GithubSession.SetMode(mgo.Monotonic, true)
+	ses.SetMode(mgo.Monotonic, true)
+
+	return &Session{
+		MongoSession: ses,
+	}
 }
