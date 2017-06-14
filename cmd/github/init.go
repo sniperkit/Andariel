@@ -35,19 +35,12 @@ import (
 	"Andariel/pkg/mongo"
 )
 
-var logger *log.AndarielLogger = log.AndarielCreateLogger(
-	&log.AndarielLogTag{
-		log.LogTagService: "main",
-		log.LogTagType:    "main",
-	},
-	log.AndarielLogLevelDefault)
-
 func init() {
 	sigHandler = interrupt.New(finalHandler, func() {})
-	logger.Debug("Interrupt handler initialized")
+	log.Logger.Debug("Interrupt handler initialized")
 
 	readConfiguration()
 
 	mongo.InitGithub(configuration.MongoUrl)
-	logger.Debug("The MongoDB of GitHub connected.")
+	log.Logger.Debug("The MongoDB of GitHub connected.")
 }

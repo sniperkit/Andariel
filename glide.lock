@@ -1,14 +1,14 @@
-hash: d4e5f724b834eabf4d6ff2780cd2f742fca64c782ba198740efccd42458c9ca6
-updated: 2017-05-15T15:23:14.763521927+08:00
+hash: 5ee70d559a66d6a951b3831333e918890570d73ac84801c4ef73f5ae1a036543
+updated: 2017-06-14T13:20:31.147453696+08:00
 imports:
 - name: github.com/fsnotify/fsnotify
   version: 4da3e2cfbabc9f751898f250b49f2439785783a1
 - name: github.com/golang/protobuf
-  version: fec3b39b059c0f88fa6b20f5ed012b1aa203a8b4
+  version: 4bd1920723d7b7c925de087aa32e2187708897f7
   subpackages:
   - proto
 - name: github.com/google/go-github
-  version: 4a42a1def4af554769703e8ac0ce5290c16371a2
+  version: 7a51fb928f52a196d5f31daefb8a489453ef54ff
   subpackages:
   - github
 - name: github.com/google/go-querystring
@@ -31,19 +31,15 @@ imports:
 - name: github.com/magiconair/properties
   version: 51463bfca2576e06c62a8504b5c0f06d61312647
 - name: github.com/mitchellh/mapstructure
-  version: cc8532a8e9a55ea36402aa21efdf403a60d34096
+  version: d0303fe809921458f417bcf828397a65db30a7e4
 - name: github.com/nats-io/go-nats
   version: 61923ed1eaf8398000991fbbee2ef11ab5a5be0d
 - name: github.com/pelletier/go-buffruneio
   version: c37440a7cf42ac63b919c752ca73a85067e05992
 - name: github.com/pelletier/go-toml
-  version: 685a1f1cb7a66b9cadbe8f1ac49d9f8f567d6a9d
-- name: github.com/pkg/errors
-  version: c605e284fe17294bda444b34710735b29d1a9d90
+  version: fe7536c3dee2596cdd23ee9976a17c22bdaae286
 - name: github.com/robfig/cron
   version: b024fc5ea0e34bc3f83d9941c8d60b0622bfaca4
-- name: github.com/Sirupsen/logrus
-  version: ba1b36c82c5e05c4f912a88eab0dcd91a171688f
 - name: github.com/spf13/afero
   version: 9be650865eab0c12963d8753212f4f9c66cdcf12
   subpackages:
@@ -51,31 +47,43 @@ imports:
 - name: github.com/spf13/cast
   version: acbeb36b902d72a7a4c18e8f3241075e7ab763e4
 - name: github.com/spf13/jwalterweatherman
-  version: 8f07c835e5cc1450c082fe3a439cf87b0cbb2d99
+  version: 0efa5202c04663c757d84f90f5219c1250baf94f
 - name: github.com/spf13/pflag
-  version: e57e3eeb33f795204c1ca35f56c44f83227c6e66
+  version: 9ff6c6923cfffbcd502984b8e0c80539a94968b7
 - name: github.com/spf13/viper
-  version: 0967fc9aceab2ce9da34061253ac10fb99bba5b2
+  version: a1ecfa6a20bd4ef9e9caded262ee1b1b26847675
+- name: go.uber.org/atomic
+  version: 4e336646b2ef9fc6e47be8e21594178f98e5ebcf
+- name: go.uber.org/zap
+  version: 9cabc84638b70e564c3dab2766efcb1ded2aac9f
+  subpackages:
+  - buffer
+  - internal/bufferpool
+  - internal/color
+  - internal/exit
+  - internal/multierror
+  - zapcore
 - name: golang.org/x/net
-  version: 84f0e6f92b10139f986b1756e149a7d9de270cdc
+  version: f2499483f923065a842d38eb4c7f1927e6fc6e6d
   subpackages:
   - context
   - html
+  - unicode
 - name: golang.org/x/oauth2
-  version: ad516a297a9f2a74ecc244861b298c94bdd28b9d
+  version: a6bd8cefa1811bd24b86f8902872e4e8225f74c4
   subpackages:
   - internal
 - name: golang.org/x/sys
-  version: 1e99a4f9d247b28c670884b9a8d6801f39a47b77
+  version: 8f0908ab3b2457e2e15403d3697c9ef5cb4b57a9
   subpackages:
   - unix
 - name: golang.org/x/text
-  version: 19e51611da83d6be54ddafce4a4af510cb3e9ea4
+  version: 2910a502d2bf9e43193af9d68ca516529614eed3
   subpackages:
   - transform
   - unicode/norm
 - name: google.golang.org/appengine
-  version: 170382fa85b10b94728989dfcf6cc818b335c952
+  version: 12d5545dc1cfa6047a286d5e853841b6471f4c19
   subpackages:
   - internal
   - internal/app_identity
@@ -94,5 +102,5 @@ imports:
   - internal/sasl
   - internal/scram
 - name: gopkg.in/yaml.v2
-  version: cd8b52f8269e0feb286dfeef29f8fe4d5b397e0b
+  version: 53feefa2559fb8dfa8d81baad31be332c97d6c77
 testImports: []

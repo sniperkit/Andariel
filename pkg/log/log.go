@@ -30,55 +30,21 @@
 package log
 
 import (
-	"github.com/Sirupsen/logrus"
+	"go.uber.org/zap"
 )
 
-type AndarielLogLevel logrus.Level
-
-const (
-	AndarielLogLevelDebug = AndarielLogLevel(logrus.DebugLevel)
-	AndarielLogLevelInfo = AndarielLogLevel(logrus.InfoLevel)
-	AndarielLogLevelWarn = AndarielLogLevel(logrus.WarnLevel)
-	AndarielLogLevelError = AndarielLogLevel(logrus.ErrorLevel)
-
-	// 设置全局日志设定
-	AndarielLogLevelDefault = AndarielLogLevelDebug
+var (
+	Logger			*zap.Logger
 )
 
-// 日志通用接口
-type AndarielLoggerInf interface {
-	Debug(args ...interface{})
-	Info(args ...interface{})
-	Warn(args ...interface{})
-	Error(args ...interface{})
-}
+func init() {
+	var (
+		err			error
+	)
 
-type AndarielLogger struct {
-	entry *logrus.Entry
-}
+	Logger, err = zap.NewDevelopment()
 
-type AndarielLogTag logrus.Fields
-
-// 创建日志管理工具
-func AndarielCreateLogger(tags *AndarielLogTag, level AndarielLogLevel) *AndarielLogger {
-	entry := logrus.WithFields(logrus.Fields(*tags))
-	entry.Logger.Level = logrus.Level(level)
-
-	return &AndarielLogger{entry: entry}
-}
-
-func (this *AndarielLogger) Debug(args ...interface{}) {
-	this.entry.Debug(args)
-}
-
-func (this *AndarielLogger) Info(args ...interface{}) {
-	this.entry.Info(args)
-}
-
-func (this *AndarielLogger) Warn(args ...interface{}) {
-	this.entry.Warn(args)
-}
-
-func (this *AndarielLogger) Error(args ...interface{}) {
-	this.entry.Error(args)
+	if err != nil {
+		panic(err)
+	}
 }

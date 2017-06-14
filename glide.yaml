@@ -12,11 +12,18 @@ import:
   subpackages:
   - context
   - html
+  - unicode
+- package: golang.org/x/sys
+  subpackages:
+  - unix
+- package: golang.org/x/text
+  subpackages:
+  - transform
 - package: github.com/labstack/echo
   version: ^3.1.0-rc.1
 - package: golang.org/x/oauth2
 - package: github.com/spf13/viper
-- package: github.com/Sirupsen/logrus
-  version: ^0.11.5
 - package: github.com/robfig/cron
   version: ^1.0.0
+- package: go.uber.org/zap
+  version: v1.4.1

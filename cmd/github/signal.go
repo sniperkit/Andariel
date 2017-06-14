@@ -33,6 +33,7 @@ import (
 	"os"
 	"syscall"
 
+	"Andariel/pkg/log"
 	"Andariel/pkg/interrupt"
 )
 
@@ -43,15 +44,15 @@ var (
 func finalHandler(sig os.Signal) {
 	switch sig {
 	case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-		logger.Info("Signal quit/term/int captured")
+		log.Logger.Info("Signal quit/term/int captured")
 		return
 
 	case syscall.SIGHUP:
-		logger.Info("Signal hup captured")
+		log.Logger.Info("Signal hup captured")
 		return
 
 	case syscall.SIGALRM:
-		logger.Info("Signal alrm captured")
+		log.Logger.Info("Signal alrm captured")
 		return
 	}
 }
