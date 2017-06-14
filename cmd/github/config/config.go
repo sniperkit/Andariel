@@ -27,21 +27,21 @@
  *     Initial: 12/05/2017        Jia Chenhui
  */
 
-package main
+package config
 
 import (
 	"github.com/spf13/viper"
 )
 
 var (
-	configuration *Config
+	Configuration *Config
 )
 
 type Config struct {
 	MongoUrl string
 }
 
-func readConfiguration() {
+func ReadConfiguration() {
 	viper.AddConfigPath("./")
 	viper.SetConfigName("config")
 
@@ -49,7 +49,7 @@ func readConfiguration() {
 		panic(err)
 	}
 
-	configuration = &Config{
+	Configuration = &Config{
 		MongoUrl: viper.GetString("mongo.url"),
 	}
 }
