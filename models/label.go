@@ -33,7 +33,7 @@ import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
 
-	"Andariel/mongo"
+	"Andariel/pkg/mongo"
 )
 
 type LabelServiceProvider struct {

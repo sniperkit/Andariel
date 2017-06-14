@@ -39,7 +39,7 @@ import (
 	"github.com/google/go-github/github"
 	"golang.org/x/oauth2"
 
-	"Andariel/log"
+	"Andariel/pkg/log"
 )
 
 const (

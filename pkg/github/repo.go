@@ -36,7 +36,7 @@ import (
 
 	"github.com/google/go-github/github"
 
-	"Andariel/common"
+	"Andariel/pkg/constants"
 	"Andariel/pkg/utility"
 )
 
@@ -115,7 +115,7 @@ func searchRepos(client *GHClient, query string, opt *github.SearchOptions) ([]g
 
 finish:
 	if len(result) != 0 {
-		stopAt = util.SplitQuery(query)
+		stopAt = utility.SplitQuery(query)
 	} else {
 		stopAt = ""
 	}
@@ -130,13 +130,13 @@ finish:
 //
 // querySeg: 指定除创建时间之外的其它条件
 // For example:
-//     queryPart := common.QueryLanguage + ":" + common.LangLua + " " + common.QueryCreated + ":"
+//     queryPart := constants.QueryLanguage + ":" + constants.LangLua + " " + constants.QueryCreated + ":"
 //
 // opt: 为搜索方法指定可选参数
 // For example:
 //     opt := &github.SearchOptions{
-//         Sort:        common.SortByStars,
-//         Order:       common.OrderByDesc,
+//         Sort:        constants.SortByStars,
+//         Order:       constants.OrderByDesc,
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
@@ -175,13 +175,13 @@ finish:
 //
 // querySeg: 指定除创建时间之外的其它条件
 // For example:
-//     queryPart := common.QueryLanguage + ":" + common.LangLua + " " + common.QueryCreated + ":"
+//     queryPart := constants.QueryLanguage + ":" + constants.LangLua + " " + constants.QueryCreated + ":"
 //
 // opt: 为搜索方法指定可选参数
 // For example:
 //     opt := &github.SearchOptions{
-//         Sort:        common.SortByStars,
-//         Order:       common.OrderByDesc,
+//         Sort:        constants.SortByStars,
+//         Order:       constants.OrderByDesc,
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
@@ -199,13 +199,13 @@ func SearchReposByStartTime(client *GHClient, year int, month time.Month, day in
 		var dateFormat string
 
 		switch incremental {
-		case common.OneQuarter:
+		case constants.OneQuarter:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 3, 0).Format("2006-01-02")
-		case common.OneMonth:
+		case constants.OneMonth:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 1, 0).Format("2006-01-02")
-		case common.OneWeek:
+		case constants.OneWeek:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 7).Format("2006-01-02")
-		case common.OneDay:
+		case constants.OneDay:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 1).Format("2006-01-02")
 		default:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 1, 0).Format("2006-01-02")
@@ -221,13 +221,13 @@ func SearchReposByStartTime(client *GHClient, year int, month time.Month, day in
 		result = append(result, repos...)
 
 		switch incremental {
-		case common.OneQuarter:
+		case constants.OneQuarter:
 			date = date.AddDate(0, 3, 1)
-		case common.OneMonth:
+		case constants.OneMonth:
 			date = date.AddDate(0, 1, 1)
-		case common.OneWeek:
+		case constants.OneWeek:
 			date = date.AddDate(0, 0, 8)
-		case common.OneDay:
+		case constants.OneDay:
 			date = date.AddDate(0, 0, 2)
 		default:
 			date = date.AddDate(0, 1, 1)
