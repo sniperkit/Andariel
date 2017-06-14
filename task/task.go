@@ -30,15 +30,14 @@
 package task
 
 import (
-	"time"
 	"gopkg.in/mgo.v2/bson"
 )
 
 type Task struct {
-	Id       bson.ObjectId   `bson:"_id,omitempty"`
-	Type     uint16          `bson:"type"`
-	Param    interface{}     `bson:"param"`
-	Date     time.Time       `bson:"date"`
+	Id              bson.ObjectId   `bson:"_id,omitempty"`
+	Type            uint16          `bson:"type"`
+	Status          uint16          `bson:"status"`
+	Param           interface{}     `bson:"param"`
 }
 
 type Result struct {

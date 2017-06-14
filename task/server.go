@@ -47,7 +47,7 @@ type Handler func(t *Task) error
 // Server 配置参数
 type ServerOption struct {
 	queueEngine QueueEngine
-	WorkerSize  uint32
+	WorkerSize  int
 }
 
 // Server 结构
@@ -66,14 +66,17 @@ func NewServer(option *ServerOption) *Server {
 	s := Server{
 		distChan:        make(chan chan Task),
 		mux:             make(map[int]Handler),
+		resultChan:      make(chan Result),
 		option:          option,
 	}
 
-	for i := uint32(0); i < option.WorkerSize; i++ {
-		_ = Worker{
+	for i := 0; i < option.WorkerSize; i++ {
+		w := Worker{
 			server:   &s,
 			tchan:    make(chan Task),
 		}
+
+		w.Run()
 	}
 
 	return &s
@@ -83,6 +86,7 @@ func NewServer(option *ServerOption) *Server {
 func (this *Server) Register(t int, h Handler) error {
 	this.lock.Lock()
 	defer this.lock.Unlock()
+
 	_, ok := this.mux[t]
 
 	if !ok {
@@ -102,6 +106,10 @@ func (this *Server) DelTask(id interface{}) error {
 	return this.option.queueEngine.DelTask(id)
 }
 
+func (this *Server) ChangeActive(id interface{}, status int16) error {
+	return this.option.queueEngine.ChangeActive(id, status)
+}
+
 // 启动 Server
 func (this *Server) Start() {
 	for {
@@ -113,11 +121,11 @@ func (this *Server) Start() {
 			tasks, err = this.FetchTasks()
 		}
 
-		for i := uint32(0); i < this.option.WorkerSize; {
+		for i := 0; i < len(tasks); {
 			select {
 			case tchan := <-this.distChan:
+				this.ChangeActive(tasks[i].Id, TaskExecuting)
 				tchan <- tasks[i]
-
 				i++
 			case result := <- this.resultChan:
 				if result.IsWorked == true {

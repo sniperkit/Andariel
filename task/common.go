@@ -37,6 +37,9 @@ const (
 	TaskGetPopular     = 0x03
 	TaskGetTrending    = 0x04
 
+	TaskUnexecuted = 1
+	TaskExecuting  = 2
+
 	MDbName            = "github"
 	MDColl             = "task"
 )

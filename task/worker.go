@@ -27,10 +27,11 @@
  *     Initial: 2017/04/30        Liu Jiachang
  */
 
-
 package task
 
-import "fmt"
+import (
+    "fmt"
+)
 
 type Worker struct {
     server      *Server
@@ -41,6 +42,7 @@ type Worker struct {
 func (this *Worker) Run() {
     go func() {
         for {
+            this.server.distChan <- this.tchan
             this.task = <- this.tchan
             handler, ok := this.server.mux[int(this.task.Type)]
 
@@ -49,8 +51,9 @@ func (this *Worker) Run() {
 
                 if err != nil {
                     fmt.Println("[ERROR]:", this.task.Id, " Handler err")
+                    this.server.ChangeActive(this.task.Id, TaskUnexecuted)
                 } else {
-                    // TODO: 告诉 Server 这个任务执行失败。
+                    this.server.DelTask(this.task.Id)
                 }
             }
         }
