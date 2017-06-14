@@ -27,7 +27,7 @@
  *     Initial: 02/05/2017        Jia Chenhui
  */
 
-package init
+package ini
 
 import (
 	"Andariel/cmd/github/config"
@@ -38,7 +38,7 @@ import (
 
 func PrepareGitSes() {
 	config.ReadConfiguration()
-	models.GithubSession = mongo.InitMongoSes(config.Configuration.MongoUrl)
+	models.GithubSession = mongo.InitMongoSes(config.Configuration.MongoUrl).MongoSession
 	log.Logger.Info("The MongoDB of GitHub connected.")
 }
 
