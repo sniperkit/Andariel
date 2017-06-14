@@ -87,7 +87,7 @@ func GetAllRepos(client *GHClient, opt *github.RepositoryListAllOptions) ([]*git
 
 // SearchRepos 按条件从 github 搜索库，受 github API 限制，一次请求只能获取 1000 条记录
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchRepos(client *GHClient, query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
+func searchRepos(client *GHClient, query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result []github.Repository
 		repos  *github.RepositoriesSearchResult
@@ -101,14 +101,10 @@ func SearchRepos(client *GHClient, query string, opt *github.SearchOptions) ([]g
 
 	for page <= maxPage {
 		opt.Page = page
-		repos, resp, err = client.Client.Search.Repositories(context.Background(), query, opt)
 
+		repos, resp, err = client.Client.Search.Repositories(context.Background(), query, opt)
 		if err != nil {
-			stopAt = ""
-			if resp == nil {
-				return nil, nil, stopAt, err
-			}
-			return nil, resp, stopAt, err
+			goto finish
 		}
 
 		maxPage = resp.LastPage
@@ -117,14 +113,14 @@ func SearchRepos(client *GHClient, query string, opt *github.SearchOptions) ([]g
 		page++
 	}
 
-	// 获取 query 中的时间字符串，以便下次时请求从这个时间开始
+finish:
 	if len(result) != 0 {
 		stopAt = util.SplitQuery(query)
 	} else {
 		stopAt = ""
 	}
 
-	return result, resp, stopAt, nil
+	return result, resp, stopAt, err
 }
 
 // SearchReposByCreated 按创建时间及其它指定条件搜索库
@@ -155,14 +151,15 @@ func SearchReposByCreated(client *GHClient, queries []string, querySeg string, o
 	for _, q := range queries {
 		query := querySeg + q
 
-		repos, resp, stopAt, err = SearchRepos(client, query, opt)
+		repos, resp, stopAt, err = searchRepos(client, query, opt)
 		if err != nil {
-			return nil, resp, stopAt, err
+			goto finish
 		}
 
 		result = append(result, repos...)
 	}
 
+finish:
 	return result, resp, stopAt, nil
 }
 
@@ -216,9 +213,9 @@ func SearchReposByStartTime(client *GHClient, year int, month time.Month, day in
 
 		query := querySeg + dateFormat
 
-		repos, resp, stopAt, err = SearchRepos(client, query, opt)
+		repos, resp, stopAt, err = searchRepos(client, query, opt)
 		if err != nil {
-			return nil, resp, stopAt, err
+			goto finish
 		}
 
 		result = append(result, repos...)
@@ -237,7 +234,8 @@ func SearchReposByStartTime(client *GHClient, year int, month time.Month, day in
 		}
 	}
 
-	return result, resp, stopAt, nil
+finish:
+	return result, resp, stopAt, err
 }
 
 // 根据 *github.Response 等待相应时间
