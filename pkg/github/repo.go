@@ -199,13 +199,13 @@ func SearchReposByStartTime(client *GHClient, year int, month time.Month, day in
 		var dateFormat string
 
 		switch incremental {
-		case constants.OneQuarter:
+		case constants.Quarter:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 3, 0).Format("2006-01-02")
-		case constants.OneMonth:
+		case constants.Month:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 1, 0).Format("2006-01-02")
-		case constants.OneWeek:
+		case constants.Week:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 7).Format("2006-01-02")
-		case constants.OneDay:
+		case constants.Day:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 1).Format("2006-01-02")
 		default:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 1, 0).Format("2006-01-02")
@@ -221,13 +221,13 @@ func SearchReposByStartTime(client *GHClient, year int, month time.Month, day in
 		result = append(result, repos...)
 
 		switch incremental {
-		case constants.OneQuarter:
+		case constants.Quarter:
 			date = date.AddDate(0, 3, 1)
-		case constants.OneMonth:
+		case constants.Month:
 			date = date.AddDate(0, 1, 1)
-		case constants.OneWeek:
+		case constants.Week:
 			date = date.AddDate(0, 0, 8)
-		case constants.OneDay:
+		case constants.Day:
 			date = date.AddDate(0, 0, 2)
 		default:
 			date = date.AddDate(0, 1, 1)
