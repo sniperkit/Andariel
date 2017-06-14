@@ -34,12 +34,12 @@ import (
 )
 
 var (
-	Logger			*zap.Logger
+	Logger *zap.Logger
 )
 
 func init() {
 	var (
-		err			error
+		err error
 	)
 
 	Logger, err = zap.NewDevelopment()
