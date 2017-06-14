@@ -37,6 +37,7 @@ import (
 	"time"
 
 	"github.com/google/go-github/github"
+	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 
 	"Andariel/pkg/log"
@@ -53,13 +54,6 @@ const (
 	searchCategory
 	categories
 )
-
-var logger *log.AndarielLogger = log.AndarielCreateLogger(
-	&log.AndarielLogTag{
-		log.LogTagService: "github",
-		log.LogTagType:    "client",
-	},
-	log.AndarielLogLevelDefault)
 
 type GHClient struct {
 	Client     *github.Client
@@ -99,12 +93,12 @@ func (c *GHClient) init(tokenSource oauth2.TokenSource) {
 
 	// 检查 token 是否有效
 	if !c.isValidToken(httpClient) {
-		logger.Debug("Invalid token.")
+		log.Logger.Info("Invalid token.")
 		return
 	}
 
 	if c.isLimited() {
-		logger.Debug("Hit rate limit while initializing the client.")
+		log.Logger.Info("Hit rate limit while initializing the client.")
 	}
 }
 
@@ -112,13 +106,13 @@ func (c *GHClient) init(tokenSource oauth2.TokenSource) {
 func (c *GHClient) isValidToken(httpClient *http.Client) bool {
 	resp, err := c.makeRequest(httpClient)
 	if err != nil {
-		logger.Error("makeRequest returned error:", err)
+		log.Logger.Error("makeRequest returned error.", zap.String("error:", err.Error()))
 		return false
 	}
 
 	err = github.CheckResponse(resp)
 	if e, ok := err.(*github.TwoFactorAuthError); ok {
-		logger.Error("401 Unauthorized:", e)
+		log.Logger.Error("401 Unauthorized.", zap.String("error:", e.Error()))
 		return false
 	}
 
@@ -129,14 +123,14 @@ func (c *GHClient) isValidToken(httpClient *http.Client) bool {
 func (c *GHClient) makeRequest(httpClient *http.Client) (*http.Response, error) {
 	req, err := c.Client.NewRequest("GET", "", nil)
 	if err != nil {
-		logger.Error("Client.NewRequest returned error:", err)
+		log.Logger.Error("Client.NewRequest returned error.", zap.String("error:", err.Error()))
 		return nil, err
 	}
 
 	// 发起请求
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		logger.Error("httpClient.Do returned error:", err)
+		log.Logger.Error("httpClient.Do returned error.", zap.String("error:", err.Error()))
 		return nil, err
 	}
 
@@ -147,7 +141,7 @@ func (c *GHClient) makeRequest(httpClient *http.Client) (*http.Response, error) 
 func (c *GHClient) isLimited() bool {
 	rate, _, err := c.Client.RateLimits(context.Background())
 	if err != nil {
-		logger.Error("Client.RateLimits returned error:", err)
+		log.Logger.Error("Client.RateLimits returned error.", zap.String("error:", err.Error()))
 		return true
 	}
 
