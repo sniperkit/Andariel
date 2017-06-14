@@ -57,7 +57,7 @@ func SplitDate(stopAt string) ([]int, error) {
 	return dateInt, nil
 }
 
-// DateConv 将字符串转换为 int
+// StrToInt 将字符串转换为 int
 // dates:
 //     ["2006", "01", "02"]
 func StrToInt(dates []string) ([]int, error) {
