@@ -33,8 +33,6 @@ import (
 	"github.com/google/go-github/github"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-
-	"Andariel/pkg/mongo"
 )
 
 // 对外服务接口
@@ -46,7 +44,7 @@ var GitUserCollection *mgo.Collection
 
 // 连接、设置索引
 func PrepareGitUser() {
-	GitUserCollection = mongo.GithubSession.DB(mongo.MDGitName).C("Owner")
+	GitUserCollection = GithubSession.DB("github").C("Owner")
 	userIndex := mgo.Index{
 		Key:        []string{"Login"},
 		Unique:     true,

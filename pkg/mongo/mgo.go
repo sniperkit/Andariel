@@ -9,7 +9,7 @@ type Session struct {
 }
 
 // 初始化 MongoDB 连接
-func InitGithub(url string) *Session {
+func InitMongoSes(url string) *Session {
 	ses, err := mgo.Dial(url)
 
 	if err != nil {

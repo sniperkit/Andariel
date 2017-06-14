@@ -33,20 +33,14 @@ import (
 	"time"
 
 	"github.com/google/go-github/github"
+	"go.uber.org/zap"
 	"gopkg.in/mgo.v2"
 
+	"Andariel/models"
 	git "Andariel/pkg/github"
 	"Andariel/pkg/log"
-	"Andariel/models"
 	"Andariel/pkg/utility"
 )
-
-var logger *log.AndarielLogger = log.AndarielCreateLogger(
-	&log.AndarielLogTag{
-		log.LogTagService: "github",
-		log.LogTagType:    "process",
-	},
-	log.AndarielLogLevelDefault)
 
 var ClientManager *git.ClientManager = git.NewClientManager()
 
@@ -92,7 +86,9 @@ func SearchRepos(year int, month time.Month, day int, incremental, querySeg stri
 search:
 	repos, resp, stopAt, err := git.SearchReposByStartTime(client, year, month, day, incremental, querySeg, opt)
 	if err != nil {
-		logger.Error("SearchReposByStartTime returned error:", err)
+		log.Logger.Error("SearchReposByStartTime returned error.",
+			zap.String("error:", err.Error()))
+
 		if _, ok := err.(*github.RateLimitError); ok {
 			goto store
 		} else {
@@ -105,7 +101,9 @@ store:
 	for _, repo := range repos {
 		err = StoreRepo(&repo, client)
 		if err != nil {
-			logger.Error("StoreRepo returned error:", err)
+			log.Logger.Error("StoreRepo returned error.",
+				zap.String("error:", err.Error()))
+
 			return
 		}
 	}
@@ -119,8 +117,10 @@ store:
 		if stopAt != "" {
 			newDate, err := utility.SplitDate(stopAt)
 			if err != nil {
-				logger.Error("SplitDate returned error:", err)
+				log.Logger.Error("SplitDate returned error.",
+					zap.String("error:", err.Error()))
 			}
+
 			year = newDate[0]
 			monthInt := newDate[1]
 			switch monthInt {
@@ -151,7 +151,7 @@ store:
 			}
 			day = newDate[2]
 		} else {
-			logger.Error("stopAt is empty string")
+			log.Logger.Info("stopAt is empty string.")
 			return
 		}
 

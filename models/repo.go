@@ -34,8 +34,6 @@ import (
 	"github.com/google/go-github/github"
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-
-	"Andariel/pkg/mongo"
 )
 
 // 对外服务接口
@@ -47,7 +45,7 @@ var GitReposCollection *mgo.Collection
 
 // 连接、设置索引
 func PrepareGitRepos(colName string) {
-	GitReposCollection = mongo.GithubSession.DB(mongo.MDGitName).C(colName)
+	GitReposCollection = GithubSession.DB("github").C(colName)
 
 	fullNameIndex := mgo.Index{
 		Key:        []string{"FullName"},
@@ -141,4 +139,3 @@ func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *stri
 
 	return nil
 }
-

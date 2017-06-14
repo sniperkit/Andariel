@@ -30,10 +30,21 @@
 package init
 
 import (
+	"Andariel/cmd/github/config"
 	"Andariel/models"
+	"Andariel/pkg/log"
+	"Andariel/pkg/mongo"
 )
 
-func InitMongoCollections(colName string) {
+func PrepareGitSes() {
+	config.ReadConfiguration()
+	models.GithubSession = mongo.InitMongoSes(config.Configuration.MongoUrl)
+	log.Logger.Info("The MongoDB of GitHub connected.")
+}
+
+func InitGithubMongo(colName string) {
+	PrepareGitSes()
 	models.PrepareGitRepos(colName)
 	models.PrepareGitUser()
+	models.PrepareGitLabel()
 }

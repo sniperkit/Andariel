@@ -32,19 +32,18 @@ package models
 import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-
-	"Andariel/pkg/mongo"
 )
 
 type LabelServiceProvider struct {
 }
 
+var GithubSession *mgo.Session
 var LabelService *LabelServiceProvider
 var LabelCollection *mgo.Collection
 
 // 连接数据库、创建索引
 func PrepareGitLabel() {
-	LabelCollection = mongo.GithubSession.DB(mongo.MDGitName).C("MDLabel")
+	LabelCollection = GithubSession.DB("github").C("Label")
 
 	LabelIndex := mgo.Index{
 		Key:        []string{"Name"},
