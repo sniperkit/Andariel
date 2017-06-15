@@ -42,7 +42,7 @@ type Config struct {
 }
 
 func ReadConfiguration() {
-	viper.AddConfigPath("./")
+	viper.AddConfigPath("./config/")
 	viper.SetConfigName("config")
 
 	if err := viper.ReadInConfig(); err != nil {
