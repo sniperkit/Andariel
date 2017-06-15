@@ -36,5 +36,5 @@ import (
 
 func init() {
 	sigHandler = interrupt.New(finalHandler, func() {})
-	log.Logger.Debug("Interrupt handler initialized")
+	log.Logger.Info("Interrupt handler initialized")
 }
