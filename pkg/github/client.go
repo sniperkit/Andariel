@@ -106,13 +106,13 @@ func (c *GHClient) init(tokenSource oauth2.TokenSource) {
 func (c *GHClient) isValidToken(httpClient *http.Client) bool {
 	resp, err := c.makeRequest(httpClient)
 	if err != nil {
-		log.Logger.Error("makeRequest returned error.", zap.String("error:", err.Error()))
+		log.Logger.Error("makeRequest returned error.", zap.Error(err))
 		return false
 	}
 
 	err = github.CheckResponse(resp)
 	if e, ok := err.(*github.TwoFactorAuthError); ok {
-		log.Logger.Error("401 Unauthorized.", zap.String("error:", e.Error()))
+		log.Logger.Error("401 Unauthorized.", zap.Error(e))
 		return false
 	}
 
@@ -123,14 +123,14 @@ func (c *GHClient) isValidToken(httpClient *http.Client) bool {
 func (c *GHClient) makeRequest(httpClient *http.Client) (*http.Response, error) {
 	req, err := c.Client.NewRequest("GET", "", nil)
 	if err != nil {
-		log.Logger.Error("Client.NewRequest returned error.", zap.String("error:", err.Error()))
+		log.Logger.Error("Client.NewRequest returned error.", zap.Error(err))
 		return nil, err
 	}
 
 	// 发起请求
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		log.Logger.Error("httpClient.Do returned error.", zap.String("error:", err.Error()))
+		log.Logger.Error("httpClient.Do returned error.", zap.Error(err))
 		return nil, err
 	}
 
@@ -141,7 +141,7 @@ func (c *GHClient) makeRequest(httpClient *http.Client) (*http.Response, error) 
 func (c *GHClient) isLimited() bool {
 	rate, _, err := c.Client.RateLimits(context.Background())
 	if err != nil {
-		log.Logger.Error("Client.RateLimits returned error.", zap.String("error:", err.Error()))
+		log.Logger.Error("Client.RateLimits returned error.", zap.Error(err))
 		return true
 	}
 

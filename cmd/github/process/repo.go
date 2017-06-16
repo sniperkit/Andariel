@@ -86,8 +86,7 @@ func SearchRepos(year int, month time.Month, day int, incremental, querySeg stri
 search:
 	repos, resp, stopAt, err := git.SearchReposByStartTime(client, year, month, day, incremental, querySeg, opt)
 	if err != nil {
-		log.Logger.Error("SearchReposByStartTime returned error.",
-			zap.String("error:", err.Error()))
+		log.Logger.Error("SearchReposByStartTime returned error.", zap.Error(err))
 
 		if _, ok := err.(*github.RateLimitError); ok {
 			goto store
@@ -101,8 +100,7 @@ store:
 	for _, repo := range repos {
 		err = StoreRepo(&repo, client)
 		if err != nil {
-			log.Logger.Error("StoreRepo returned error.",
-				zap.String("error:", err.Error()))
+			log.Logger.Error("StoreRepo returned error.", zap.Error(err))
 
 			return
 		}
@@ -117,8 +115,7 @@ store:
 		if stopAt != "" {
 			newDate, err := utility.SplitDate(stopAt)
 			if err != nil {
-				log.Logger.Error("SplitDate returned error.",
-					zap.String("error:", err.Error()))
+				log.Logger.Error("SplitDate returned error.", zap.Error(err))
 			}
 
 			year = newDate[0]
