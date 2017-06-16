@@ -42,7 +42,7 @@ var (
 )
 
 // 定义处理方法类型
-type Handler func(t *Task) error
+type Handler func(task *Task) error
 
 // Server 配置参数
 type ServerOption struct {
@@ -102,12 +102,12 @@ func (this *Server) FetchTasks() ([]Task, error) {
 	return this.option.queueEngine.FetchTasks(this.option.WorkerSize)
 }
 
-func (this *Server) DelTask(id interface{}) error {
-	return this.option.queueEngine.DelTask(id)
+func (this *Server) DeleteTask(id interface{}) error {
+	return this.option.queueEngine.DeleteTask(id)
 }
 
-func (this *Server) ChangeActive(id interface{}, status int16) error {
-	return this.option.queueEngine.ChangeActive(id, status)
+func (this *Server) Activate(id interface{}, status int16) error {
+	return this.option.queueEngine.Activate(id, status)
 }
 
 // 启动 Server
@@ -124,12 +124,12 @@ func (this *Server) Start() {
 		for i := 0; i < len(tasks); {
 			select {
 			case tchan := <-this.distChan:
-				this.ChangeActive(tasks[i].Id, TaskExecuting)
+				this.Activate(tasks[i].Id, TaskExecuted)
 				tchan <- tasks[i]
 				i++
 			case result := <- this.resultChan:
 				if result.IsWorked == true {
-					this.DelTask(result.Id)
+					this.DeleteTask(result.Id)
 				}
 			}
 		}

@@ -3,7 +3,6 @@ package task
 import (
 	"gopkg.in/mgo.v2"
 	"gopkg.in/mgo.v2/bson"
-	"fmt"
 )
 
 type MgoQueueEngine struct {
@@ -15,7 +14,7 @@ func (this *MgoQueueEngine) FetchTasks(n int) ([]Task, error) {
 
 	c := this.Sess.DB(MDbName).C(MDColl)
 	err := c.Find(bson.M{"status": 1}).Limit(n).All(&ta)
-	fmt.Println("任务-->", ta)
+
 	if err != nil {
 		return ta, err
 	}
@@ -23,14 +22,14 @@ func (this *MgoQueueEngine) FetchTasks(n int) ([]Task, error) {
 	return ta, nil
 }
 
-func (this *MgoQueueEngine) DelTask(id interface{}) error {
+func (this *MgoQueueEngine) DeleteTask(id interface{}) error {
 	c := this.Sess.DB(MDbName).C(MDColl)
 
 	return c.RemoveId(id)
 }
 
-func (this *MgoQueueEngine) ChangeActive(id interface{}, status int16) error {
+func (this *MgoQueueEngine) Activate(id interface{}, status int16) error {
 	c := this.Sess.DB(MDbName).C(MDColl)
 
-	return c.UpdateId(id, bson.M{"status": bson.M{"status": status}})
+	return c.UpdateId(id, bson.M{"$set": bson.M{"status": status}})
 }

@@ -30,13 +30,14 @@
 package task
 
 import (
-    "fmt"
+    "Andariel/pkg/log"
+    "go.uber.org/zap"
 )
 
 type Worker struct {
     server      *Server
     tchan       chan Task
-    task        *Task
+    task        Task
 }
 
 func (this *Worker) Run() {
@@ -50,11 +51,14 @@ func (this *Worker) Run() {
                 err := handler(&this.task)
 
                 if err != nil {
-                    fmt.Println("[ERROR]:", this.task.Id, " Handler err")
-                    this.server.ChangeActive(this.task.Id, TaskUnexecuted)
+                    log.Logger.Info("Handle task error:", zap.String("err", err.Error()))
+                    this.server.Activate(this.task.Id, TaskSuspend)
                 } else {
-                    this.server.DelTask(this.task.Id)
+                    this.server.DeleteTask(this.task.Id)
                 }
+            } else {
+                log.Logger.Info("No Handle!", zap.String("[ERROR]", "No this type handle!"))
+                this.server.Activate(this.task.Id, TaskSuspend)
             }
         }
     }()
