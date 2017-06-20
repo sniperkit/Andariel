@@ -160,7 +160,7 @@ func SearchReposByCreated(client *GHClient, queries []string, querySeg string, o
 	}
 
 finish:
-	return result, resp, stopAt, nil
+	return result, resp, stopAt, err
 }
 
 // SearchReposByStartTime 按指定创建时间、时间间隔及其它条件搜索库
