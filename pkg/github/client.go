@@ -54,7 +54,7 @@ const (
 type GHClient struct {
 	Client     *github.Client
 	rateLimits [categories]Rate
-	manager    *ClientManager
+	Manager    *ClientManager
 	timer      *time.Timer
 	rateMu     sync.Mutex
 }
