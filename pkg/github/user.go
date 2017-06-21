@@ -40,14 +40,6 @@ import (
 // 调用 API 获取作者信息
 func GetOwnerByID(ownerID int, client *GHClient) (*models.MDUser, *github.Response, error) {
 	owner, resp, err := client.Client.Users.GetByID(context.Background(), ownerID)
-	if err != nil {
-		if resp == nil {
-			return nil, nil, err
-		}
-
-		return nil, resp, err
-	}
-
 	user := &models.MDUser{
 		Login:             owner.Login,
 		ID:                owner.ID,
@@ -67,5 +59,5 @@ func GetOwnerByID(ownerID int, client *GHClient) (*models.MDUser, *github.Respon
 		PrivateGists:      owner.PrivateGists,
 	}
 
-	return user, resp, nil
+	return user, resp, err
 }
