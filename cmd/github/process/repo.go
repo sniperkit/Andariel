@@ -42,7 +42,7 @@ import (
 	"Andariel/pkg/utility"
 )
 
-var ClientManager *git.ClientManager = git.NewClientManager()
+var clientManager *git.ClientManager = git.NewClientManager()
 
 // 逻辑判断后，存储库信息到数据库
 func StoreRepo(repo *github.Repository, client *git.GHClient) error {
@@ -81,77 +81,101 @@ func StoreRepo(repo *github.Repository, client *git.GHClient) error {
 
 // SearchRepos 从指定时间（库的创建时间）开始搜索，并将结果保存到数据库
 func SearchRepos(year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) {
-	client := ClientManager.GetClient()
+	client := clientManager.GetClient()
+	client.Manager = clientManager
+
+	var (
+		ok                    bool
+		newDate               []int
+		result                []github.Repository
+		searchExit, storeExit chan struct{}
+	)
 
 search:
 	repos, resp, stopAt, err := git.SearchReposByStartTime(client, year, month, day, incremental, querySeg, opt)
-	if err != nil {
-		log.Logger.Error("SearchReposByStartTime returned error.", zap.Error(err))
+	result = append(result, repos...)
 
-		if _, ok := err.(*github.RateLimitError); ok {
-			goto store
-		} else {
-			return
+	if err != nil {
+		if _, ok = err.(*github.RateLimitError); ok {
+			log.Logger.Error("SearchReposByStartTime hit limit error, it's time to change client.", zap.Error(err))
+
+			searchExit = make(chan struct{})
+			go git.PutClient(client, resp, searchExit)
+
+			// 获取新 client
+			client = clientManager.GetClient()
+			client.Manager = clientManager
+
+			// 如果未成功获取 client，表示还没有可用的 client 放回 ClientManager，等待一分钟
+			if client.Client == nil {
+				time.Sleep(1 * time.Minute)
+
+				client = clientManager.GetClient()
+				client.Manager = clientManager
+			}
+
+			if stopAt != "" {
+				newDate, err = utility.SplitDate(stopAt)
+				if err != nil {
+					log.Logger.Error("SplitDate returned error.", zap.Error(err))
+				}
+
+				year = newDate[0]
+				monthInt := newDate[1]
+				switch monthInt {
+				case 1:
+					month = time.January
+				case 2:
+					month = time.February
+				case 3:
+					month = time.March
+				case 4:
+					month = time.April
+				case 5:
+					month = time.May
+				case 6:
+					month = time.June
+				case 7:
+					month = time.July
+				case 8:
+					month = time.August
+				case 9:
+					month = time.September
+				case 10:
+					month = time.October
+				case 11:
+					month = time.November
+				case 12:
+					month = time.December
+				}
+				day = newDate[2]
+
+				goto search
+			} else {
+				log.Logger.Info("stopAt is empty string.")
+				goto store
+			}
 		}
 	}
 
 store:
 	// 将获取的库存储到数据库
-	for _, repo := range repos {
+	for _, repo := range result {
 		err = StoreRepo(&repo, client)
 		if err != nil {
 			log.Logger.Error("StoreRepo returned error.", zap.Error(err))
 
+			if _, ok = err.(*github.RateLimitError); ok {
+				storeExit = make(chan struct{})
+				go git.PutClient(client, resp, storeExit)
+
+				client = clientManager.GetClient()
+				continue
+			}
 			return
 		}
 	}
 
-	// 判断 client 是否遇到速率限制并将该 client 放回 ClientManager，切换到下个 client 继续执行任务
-	if resp != nil && resp.Remaining <= 1 {
-		go git.PutClient(client)
-
-		client = ClientManager.GetClient()
-
-		if stopAt != "" {
-			newDate, err := utility.SplitDate(stopAt)
-			if err != nil {
-				log.Logger.Error("SplitDate returned error.", zap.Error(err))
-			}
-
-			year = newDate[0]
-			monthInt := newDate[1]
-			switch monthInt {
-			case 1:
-				month = time.January
-			case 2:
-				month = time.February
-			case 3:
-				month = time.March
-			case 4:
-				month = time.April
-			case 5:
-				month = time.May
-			case 6:
-				month = time.June
-			case 7:
-				month = time.July
-			case 8:
-				month = time.August
-			case 9:
-				month = time.September
-			case 10:
-				month = time.October
-			case 11:
-				month = time.November
-			case 12:
-				month = time.December
-			}
-			day = newDate[2]
-		} else {
-			log.Logger.Info("stopAt is empty string.")
-			return
-		}
-
-		goto search
-	}
+	<-searchExit
+	<-storeExit
 }
