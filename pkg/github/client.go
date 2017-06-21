@@ -43,10 +43,6 @@ import (
 	"Andariel/pkg/log"
 )
 
-const (
-	unLimit = 1
-)
-
 type rateLimitCategory uint8
 
 const (
@@ -171,16 +167,11 @@ func (c *GHClient) isLimited() bool {
 }
 
 // 初始化 client 的 timer
-func (c *GHClient) initTimer() {
-	var empty = Rate{}
-	if c.rateLimits[coreCategory] != empty {
-		coreTimer := time.NewTimer(c.rateLimits[coreCategory].Reset.Sub(time.Now()))
-		c.timer = coreTimer
-		return
-	}
-	if c.rateLimits[searchCategory] != empty {
-		searchTimer := time.NewTimer(c.rateLimits[searchCategory].Reset.Sub(time.Now()))
-		c.timer = searchTimer
+func (c *GHClient) initTimer(resp *github.Response) {
+	if resp != nil {
+		timer := time.NewTimer((*resp).Reset.Time.Sub(time.Now()) + time.Second*10)
+		c.timer = timer
+
 		return
 	}
 }
@@ -257,11 +248,14 @@ func (m *ClientManager) GetClient() *GHClient {
 }
 
 // PutClient 将 client 放回 manager
-func PutClient(client *GHClient) {
-	client.initTimer()
-	<-client.timer.C
+// resp: 使用 client 时返回的 response
+// done: 用来发送退出主进程的信号, 每次调用 PutClient 函数前都要 make 一个 done
+func PutClient(client *GHClient, resp *github.Response, done chan struct{}) {
+	client.initTimer(resp)
 
+	<-client.timer.C
 	select {
-	case client.manager.reclaim <- client:
+	case client.Manager.reclaim <- client:
+		close(done)
 	}
 }
