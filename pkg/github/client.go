@@ -239,11 +239,11 @@ func NewClientManager() *ClientManager {
 
 // GetClient 读取 client
 func (m *ClientManager) GetClient() *GHClient {
-	select {
-	case c := <-m.Dispatch:
-		return c
-	default:
-		return nil
+	for {
+		select {
+		case c := <-m.Dispatch:
+			return c
+		}
 	}
 }
 
