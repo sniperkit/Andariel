@@ -166,7 +166,7 @@ func SearchReposByStartTime(client *GHClient, year int, month time.Month, day in
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 1, 0).Format("2006-01-02")
 		}
 
-		query := querySeg + dateFormat
+		query := querySeg + "\"" + dateFormat + "\""
 
 		repos, resp, stopAt, err = searchRepos(client, query, opt)
 		if err != nil {
