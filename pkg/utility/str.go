@@ -37,6 +37,10 @@ import (
 
 // 解析传入的 query 字符串，得到最后请求时间
 func SplitQuery(query string) string {
+	if query == "" {
+		return ""
+	}
+
 	dateSlice := strings.SplitAfter(query, ".. ")[1]
 	dateStr := strings.Split(dateSlice, "\"")[0]
 
