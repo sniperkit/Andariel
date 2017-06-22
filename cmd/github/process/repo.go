@@ -106,14 +106,7 @@ search:
 			client = clientManager.GetClient()
 			client.Manager = clientManager
 
-			// 如果未成功获取 client，表示还没有可用的 client 放回 ClientManager，等待一分钟
-			if client.Client == nil {
-				time.Sleep(1 * time.Minute)
-
-				client = clientManager.GetClient()
-				client.Manager = clientManager
-			}
-
+			// 判断 stopAt 是否为空
 			if stopAt != "" {
 				newDate, err = utility.SplitDate(stopAt)
 				if err != nil {
@@ -151,29 +144,20 @@ search:
 				day = newDate[2]
 
 				goto search
-			} else {
-				log.Logger.Info("stopAt is empty string.")
-				goto store
 			}
+
+			log.Logger.Info("stopAt is empty string.")
 		}
 	}
 
-store:
 	// 将获取的库存储到数据库
 	for _, repo := range result {
-		err = StoreRepo(&repo, client)
-		if err != nil {
-			log.Logger.Error("StoreRepo returned error.", zap.Error(err))
-
-			if _, ok = err.(*github.RateLimitError); ok {
-				storeExit = make(chan struct{})
-				go git.PutClient(client, resp, storeExit)
-
-				client = clientManager.GetClient()
-				continue
+		go func(r github.Repository) {
+			err = StoreRepo(&r, client)
+			if err != nil {
+				log.Logger.Error("StoreRepo returned error.", zap.Error(err))
 			}
-			return
-		}
+		}(repo)
 	}
 
 	<-searchExit
