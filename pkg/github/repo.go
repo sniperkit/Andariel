@@ -69,11 +69,7 @@ func searchRepos(client *GHClient, query string, opt *github.SearchOptions) ([]g
 	}
 
 finish:
-	if len(result) != 0 {
-		stopAt = utility.SplitQuery(query)
-	} else {
-		stopAt = ""
-	}
+	stopAt = utility.SplitQuery(query)
 
 	return result, resp, stopAt, err
 }
