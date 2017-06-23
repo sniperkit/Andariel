@@ -41,8 +41,9 @@ func SplitQuery(query string) string {
 		return ""
 	}
 
-	dateSlice := strings.SplitAfter(query, ".. ")[1]
-	dateStr := strings.Split(dateSlice, "\"")[0]
+	dateSlice := strings.SplitAfter(query, ":")[2]
+	dateSeg := strings.Split(dateSlice, ".. ")[0]
+	dateStr := strings.Split(dateSeg, "\"")[1]
 
 	return dateStr
 }
