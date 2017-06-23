@@ -99,8 +99,10 @@ search:
 		if _, ok = err.(*github.RateLimitError); ok {
 			log.Logger.Error("SearchReposByStartTime hit limit error, it's time to change client.", zap.Error(err))
 
-			searchExit = make(chan struct{})
-			go git.PutClient(client, resp, searchExit)
+			go func() {
+				searchExit = make(chan struct{})
+				git.PutClient(client, resp, searchExit)
+			}()
 
 			// 获取新 client
 			client = clientManager.GetClient()
@@ -151,13 +153,24 @@ search:
 	}
 
 	// 将获取的库存储到数据库
+	log.Logger.Info("Start storing repositories now.")
 	for _, repo := range result {
-		go func(r github.Repository) {
-			err = StoreRepo(&r, client)
-			if err != nil {
-				log.Logger.Error("StoreRepo returned error.", zap.Error(err))
+		err = StoreRepo(&repo, client)
+		if err != nil {
+			if _, ok = err.(*github.RateLimitError); ok {
+				log.Logger.Error("StoreRepo hit limit error, it's time to change client.", zap.Error(err))
+				go func() {
+					storeExit = make(chan struct{})
+					git.PutClient(client, resp, storeExit)
+				}()
+
+				// 获取新 client
+				client = clientManager.GetClient()
+				client.Manager = clientManager
+
+				continue
 			}
-		}(repo)
+		}
 	}
 
 	<-searchExit
