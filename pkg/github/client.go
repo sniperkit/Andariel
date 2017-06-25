@@ -249,13 +249,11 @@ func (m *ClientManager) GetClient() *GHClient {
 
 // PutClient 将 client 放回 manager
 // resp: 使用 client 时返回的 response
-// done: 用来发送退出主进程的信号, 每次调用 PutClient 函数前都要 make 一个 done
-func PutClient(client *GHClient, resp *github.Response, done chan struct{}) {
+func PutClient(client *GHClient, resp *github.Response) {
 	client.initTimer(resp)
 
 	<-client.timer.C
 	select {
 	case client.Manager.reclaim <- client:
-		close(done)
 	}
 }
