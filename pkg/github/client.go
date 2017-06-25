@@ -169,7 +169,7 @@ func (c *GHClient) isLimited() bool {
 // 初始化 client 的 timer
 func (c *GHClient) initTimer(resp *github.Response) {
 	if resp != nil {
-		timer := time.NewTimer((*resp).Reset.Time.Sub(time.Now()) + time.Second*10)
+		timer := time.NewTimer((*resp).Reset.Time.Sub(time.Now()) + time.Second*2)
 		c.timer = timer
 
 		return
