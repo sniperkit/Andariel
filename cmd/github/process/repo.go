@@ -30,6 +30,7 @@
 package process
 
 import (
+	"sync"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -85,10 +86,10 @@ func SearchRepos(year int, month time.Month, day int, incremental, querySeg stri
 	client.Manager = clientManager
 
 	var (
-		ok                    bool
-		newDate               []int
-		result                []github.Repository
-		searchExit, storeExit chan struct{}
+		ok      bool
+		wg      sync.WaitGroup
+		newDate []int
+		result  []github.Repository
 	)
 
 search:
@@ -100,8 +101,10 @@ search:
 			log.Logger.Error("SearchReposByStartTime hit limit error, it's time to change client.", zap.Error(err))
 
 			go func() {
-				searchExit = make(chan struct{})
-				git.PutClient(client, resp, searchExit)
+				wg.Add(1)
+				defer wg.Done()
+
+				git.PutClient(client, resp)
 			}()
 
 			// 获取新 client
@@ -159,9 +162,12 @@ search:
 		if err != nil {
 			if _, ok = err.(*github.RateLimitError); ok {
 				log.Logger.Error("StoreRepo hit limit error, it's time to change client.", zap.Error(err))
+
 				go func() {
-					storeExit = make(chan struct{})
-					git.PutClient(client, resp, storeExit)
+					wg.Add(1)
+					defer wg.Done()
+
+					git.PutClient(client, resp)
 				}()
 
 				// 获取新 client
@@ -173,6 +179,6 @@ search:
 		}
 	}
 
-	<-searchExit
-	<-storeExit
+	wg.Wait()
+	log.Logger.Info("All search and storage tasks have been successful.")
 }
