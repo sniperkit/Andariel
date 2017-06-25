@@ -155,7 +155,7 @@ func SearchReposByStartTime(client *GHClient, year int, month time.Month, day in
 		case constants.Month:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 1, 0).Format("2006-01-02")
 		case constants.Week:
-			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 7).Format("2006-01-02")
+			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 6).Format("2006-01-02")
 		case constants.Day:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 0).Format("2006-01-02")
 		default:
@@ -177,7 +177,7 @@ func SearchReposByStartTime(client *GHClient, year int, month time.Month, day in
 		case constants.Month:
 			date = date.AddDate(0, 1, 1)
 		case constants.Week:
-			date = date.AddDate(0, 0, 8)
+			date = date.AddDate(0, 0, 7)
 		case constants.Day:
 			date = date.AddDate(0, 0, 1)
 		default:
