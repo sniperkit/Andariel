@@ -65,6 +65,8 @@ func searchRepos(client *GHClient, query string, opt *github.SearchOptions) ([]g
 		maxPage = resp.LastPage
 		result = append(result, repos.Repositories...)
 
+		// 防止触发 GitHub 的滥用检测机制，等待一秒
+		time.Sleep(1 * time.Second)
 		page++
 	}
 
