@@ -82,15 +82,16 @@ func StoreRepo(repo *github.Repository, client *git.GHClient) error {
 
 // SearchRepos 从指定时间（库的创建时间）开始搜索，并将结果保存到数据库
 func SearchRepos(year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) {
-	client := clientManager.GetClient()
-	client.Manager = clientManager
-
 	var (
 		ok      bool
 		wg      sync.WaitGroup
+		e       *github.AbuseRateLimitError
 		newDate []int
 		result  []github.Repository
 	)
+
+	client := clientManager.GetClient()
+	client.Manager = clientManager
 
 search:
 	repos, resp, stopAt, err := git.SearchReposByStartTime(client, year, month, day, incremental, querySeg, opt)
@@ -153,6 +154,19 @@ search:
 
 			log.Logger.Info("stopAt is empty string.")
 		}
+
+		// TODO: 判断是否触发 GitHub 的滥用检测机制 (目前此错误未成功匹配)
+		if e, ok = err.(*github.AbuseRateLimitError); ok {
+			log.Logger.Error("SearchReposByStartTime have triggered an abuse detection mechanism.", zap.Error(err))
+
+			time.Sleep(*e.RetryAfter)
+			goto search
+		}
+
+		// 如果不是以上两种错误，终止程序
+		log.Logger.Error("SearchRepos terminated because of this error.", zap.Error(err))
+
+		return
 	}
 
 	// 将获取的库存储到数据库
@@ -174,6 +188,14 @@ search:
 				client = clientManager.GetClient()
 				client.Manager = clientManager
 
+				continue
+			}
+
+			// 判断是否触发 GitHub 的滥用检测机制
+			if e, ok = err.(*github.AbuseRateLimitError); ok {
+				log.Logger.Error("SearchReposByStartTime have triggered an abuse detection mechanism.", zap.Error(err))
+
+				time.Sleep(*e.RetryAfter)
 				continue
 			}
 		}
