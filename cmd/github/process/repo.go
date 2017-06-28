@@ -30,6 +30,7 @@
 package process
 
 import (
+	"strings"
 	"sync"
 	"time"
 
@@ -158,6 +159,11 @@ search:
 			log.Logger.Error("SearchReposByStartTime have triggered an abuse detection mechanism.", zap.Error(err))
 
 			time.Sleep(*e.RetryAfter)
+			goto search
+		} else if strings.Contains(err.Error(), "timeout") {
+			log.Logger.Info("SearchReposByStartTime has encountered a timeout error. Sleep for five minutes.")
+			time.Sleep(5 * time.Minute)
+
 			goto search
 		} else {
 			log.Logger.Error("SearchRepos terminated because of this error.", zap.Error(err))
