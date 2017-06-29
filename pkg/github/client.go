@@ -32,6 +32,7 @@ package github
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"sync"
 	"time"
@@ -66,23 +67,30 @@ type Rate struct {
 }
 
 // 新建 client
-func newClient(token string) (client *GHClient) {
+func newClient(token string) (client *GHClient, err error) {
 	if token == "" {
 		client = new(GHClient)
 		tokenSource := new(oauth2.TokenSource)
-		client.init(*tokenSource)
-		return
+		if !client.init(*tokenSource) {
+			err = errors.New("failed to create client")
+			return nil, err
+		}
+
+		return client, nil
 	}
 
 	client = new(GHClient)
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	client.init(tokenSource)
+	if !client.init(tokenSource) {
+		err = errors.New("failed to create client")
+		return nil, err
+	}
 
-	return
+	return client, nil
 }
 
 // 初始化 client
-func (c *GHClient) init(tokenSource oauth2.TokenSource) {
+func (c *GHClient) init(tokenSource oauth2.TokenSource) bool {
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
 	ghClient := github.NewClient(httpClient)
 	c.Client = ghClient
@@ -90,12 +98,16 @@ func (c *GHClient) init(tokenSource oauth2.TokenSource) {
 	// 检查 token 是否有效
 	if !c.isValidToken(httpClient) {
 		log.Logger.Info("Invalid token.")
-		return
+		return false
 	}
 
+	// 检查 client 是否可用
 	if c.isLimited() {
 		log.Logger.Info("Hit rate limit while initializing the client.")
+		return false
 	}
+
+	return true
 }
 
 // 检查 token 是否有效
@@ -181,7 +193,11 @@ func newClients(tokens []string) []*GHClient {
 	var clients []*GHClient
 
 	for _, t := range tokens {
-		client := newClient(t)
+		client, err := newClient(t)
+		if err != nil {
+			continue
+		}
+
 		clients = append(clients, client)
 	}
 
