@@ -209,6 +209,8 @@ var tokens []string = []string{
 	"5511599ff7aebf94476ce3eda7741ab7ae797ef9",
 	"78d1dcb42b8c4368884603cfcd4f3a1581d771d2",
 	"5df193b89001e9fabfdb947a88cdd8b6e45378f5",
+	"666d41b2dcb83f241035d49100c9dcca8fd367b3",
+	"0c30c19f9b870ddfd9395e0feceeddda1957dd22",
 }
 
 type ClientManager struct {
