@@ -103,58 +103,7 @@ search:
 		if _, ok = err.(*github.RateLimitError); ok {
 			log.Logger.Error("SearchReposByStartTime hit limit error, it's time to change client.", zap.Error(err))
 
-			go func() {
-				wg.Add(1)
-				defer wg.Done()
-
-				git.PutClient(client, resp)
-			}()
-
-			client = clientManager.GetClient()
-			client.Manager = clientManager
-
-			if stopAt != "" {
-				newDate, err = utility.SplitDate(stopAt)
-				if err != nil {
-					log.Logger.Error("SplitDate returned error.", zap.Error(err))
-
-					return
-				}
-
-				year = newDate[0]
-				monthInt := newDate[1]
-				switch monthInt {
-				case 1:
-					month = time.January
-				case 2:
-					month = time.February
-				case 3:
-					month = time.March
-				case 4:
-					month = time.April
-				case 5:
-					month = time.May
-				case 6:
-					month = time.June
-				case 7:
-					month = time.July
-				case 8:
-					month = time.August
-				case 9:
-					month = time.September
-				case 10:
-					month = time.October
-				case 11:
-					month = time.November
-				case 12:
-					month = time.December
-				}
-				day = newDate[2]
-
-				goto search
-			}
-
-			log.Logger.Info("stopAt is empty string.")
+			goto repeatSearch
 		} else if e, ok = err.(*github.AbuseRateLimitError); ok {
 			log.Logger.Error("SearchReposByStartTime have triggered an abuse detection mechanism.", zap.Error(err))
 
@@ -170,12 +119,71 @@ search:
 
 			return
 		}
+	} else {
+
+		goto store
 	}
 
-	// 将获取的库存储到数据库
+repeatSearch:
+	{
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
+
+			git.PutClient(client, resp)
+		}()
+
+		client = clientManager.GetClient()
+		client.Manager = clientManager
+
+		if stopAt != "" {
+			newDate, err = utility.SplitDate(stopAt)
+			if err != nil {
+				log.Logger.Error("SplitDate returned error.", zap.Error(err))
+
+				return
+			}
+
+			year = newDate[0]
+			monthInt := newDate[1]
+			switch monthInt {
+			case 1:
+				month = time.January
+			case 2:
+				month = time.February
+			case 3:
+				month = time.March
+			case 4:
+				month = time.April
+			case 5:
+				month = time.May
+			case 6:
+				month = time.June
+			case 7:
+				month = time.July
+			case 8:
+				month = time.August
+			case 9:
+				month = time.September
+			case 10:
+				month = time.October
+			case 11:
+				month = time.November
+			case 12:
+				month = time.December
+			}
+			day = newDate[2]
+
+			goto search
+		}
+
+		log.Logger.Info("stopAt is empty string, stop searching.")
+	}
+
+store:
 	log.Logger.Info("Start storing repositories now.")
 	for _, repo := range result {
-	store:
+	repeat:
 		err = StoreRepo(&repo, client)
 		if err != nil {
 			if _, ok = err.(*github.RateLimitError); ok {
@@ -191,12 +199,12 @@ search:
 				client = clientManager.GetClient()
 				client.Manager = clientManager
 
-				goto store
+				goto repeat
 			} else if e, ok = err.(*github.AbuseRateLimitError); ok {
 				log.Logger.Error("SearchReposByStartTime have triggered an abuse detection mechanism.", zap.Error(err))
 
 				time.Sleep(*e.RetryAfter)
-				goto store
+				goto repeat
 			} else {
 				log.Logger.Error("StoreRepo encounter this error, proceed to the next loop.", zap.Error(err))
 
