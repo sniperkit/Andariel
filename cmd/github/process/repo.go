@@ -103,7 +103,7 @@ search:
 		if _, ok = err.(*github.RateLimitError); ok {
 			log.Logger.Error("SearchReposByStartTime hit limit error, it's time to change client.", zap.Error(err))
 
-			goto repeatSearch
+			goto changeClient
 		} else if e, ok = err.(*github.AbuseRateLimitError); ok {
 			log.Logger.Error("SearchReposByStartTime have triggered an abuse detection mechanism.", zap.Error(err))
 
@@ -124,7 +124,7 @@ search:
 		goto store
 	}
 
-repeatSearch:
+changeClient:
 	{
 		go func() {
 			wg.Add(1)
@@ -183,7 +183,7 @@ repeatSearch:
 store:
 	log.Logger.Info("Start storing repositories now.")
 	for _, repo := range result {
-	repeat:
+	repeatStore:
 		err = StoreRepo(&repo, client)
 		if err != nil {
 			if _, ok = err.(*github.RateLimitError); ok {
@@ -199,12 +199,12 @@ store:
 				client = clientManager.GetClient()
 				client.Manager = clientManager
 
-				goto repeat
+				goto repeatStore
 			} else if e, ok = err.(*github.AbuseRateLimitError); ok {
 				log.Logger.Error("SearchReposByStartTime have triggered an abuse detection mechanism.", zap.Error(err))
 
 				time.Sleep(*e.RetryAfter)
-				goto repeat
+				goto repeatStore
 			} else {
 				log.Logger.Error("StoreRepo encounter this error, proceed to the next loop.", zap.Error(err))
 
