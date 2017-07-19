@@ -104,9 +104,45 @@ func (usp *GitUserServiceProvider) GetUserID(login *string) (string, error) {
 	return u.UserID.Hex(), nil
 }
 
-// 存储作者信息
+// Create 存储作者信息，先查询数据库中是否有此用户信息, 若没有则创建，有则更新
 func (usp *GitUserServiceProvider) Create(user *MDUser) (string, error) {
-	u := MDUser{
+	userID, err := usp.GetUserID(user.Login)
+	if err != nil {
+		if err != mgo.ErrNotFound {
+			return "", err
+		}
+
+		goto create
+	} else {
+		update := MDUser{
+			Login:             user.Login,
+			ID:                user.ID,
+			HTMLURL:           user.HTMLURL,
+			Name:              user.Name,
+			Email:             user.Email,
+			PublicRepos:       user.PublicRepos,
+			PublicGists:       user.PublicGists,
+			Followers:         user.Followers,
+			Following:         user.Following,
+			CreatedAt:         user.CreatedAt,
+			UpdatedAt:         user.UpdatedAt,
+			SuspendedAt:       user.SuspendedAt,
+			Type:              user.Type,
+			TotalPrivateRepos: user.TotalPrivateRepos,
+			OwnedPrivateRepos: user.OwnedPrivateRepos,
+			PrivateGists:      user.PrivateGists,
+		}
+
+		err = GitUserCollection.Update(bson.M{"_id": bson.ObjectIdHex(userID)}, &update)
+		if err != nil {
+			return "", err
+		}
+
+		return userID, nil
+	}
+
+create:
+	create := MDUser{
 		UserID:            bson.NewObjectId(),
 		Login:             user.Login,
 		ID:                user.ID,
@@ -126,10 +162,10 @@ func (usp *GitUserServiceProvider) Create(user *MDUser) (string, error) {
 		PrivateGists:      user.PrivateGists,
 	}
 
-	_, err := GitUserCollection.Upsert(bson.M{"Login": user.Login}, &u)
+	err = GitUserCollection.Insert(&create)
 	if err != nil {
 		return "", err
 	}
 
-	return u.UserID.Hex(), nil
+	return create.UserID.Hex(), nil
 }

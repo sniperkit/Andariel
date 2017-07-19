@@ -42,7 +42,7 @@ type Config struct {
 }
 
 func ReadConfiguration() {
-	viper.AddConfigPath("./config/")
+	viper.AddConfigPath("/home/workspace/andariel/config/")
 	viper.SetConfigName("config")
 
 	if err := viper.ReadInConfig(); err != nil {

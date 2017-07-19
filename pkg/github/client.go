@@ -32,6 +32,7 @@ package github
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"sync"
 	"time"
@@ -41,10 +42,6 @@ import (
 	"golang.org/x/oauth2"
 
 	"Andariel/pkg/log"
-)
-
-const (
-	unLimit = 1
 )
 
 type rateLimitCategory uint8
@@ -58,7 +55,7 @@ const (
 type GHClient struct {
 	Client     *github.Client
 	rateLimits [categories]Rate
-	manager    *ClientManager
+	Manager    *ClientManager
 	timer      *time.Timer
 	rateMu     sync.Mutex
 }
@@ -70,23 +67,30 @@ type Rate struct {
 }
 
 // 新建 client
-func newClient(token string) (client *GHClient) {
+func newClient(token string) (client *GHClient, err error) {
 	if token == "" {
 		client = new(GHClient)
 		tokenSource := new(oauth2.TokenSource)
-		client.init(*tokenSource)
-		return
+		if !client.init(*tokenSource) {
+			err = errors.New("failed to create client")
+			return nil, err
+		}
+
+		return client, nil
 	}
 
 	client = new(GHClient)
 	tokenSource := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
-	client.init(tokenSource)
+	if !client.init(tokenSource) {
+		err = errors.New("failed to create client")
+		return nil, err
+	}
 
-	return
+	return client, nil
 }
 
 // 初始化 client
-func (c *GHClient) init(tokenSource oauth2.TokenSource) {
+func (c *GHClient) init(tokenSource oauth2.TokenSource) bool {
 	httpClient := oauth2.NewClient(oauth2.NoContext, tokenSource)
 	ghClient := github.NewClient(httpClient)
 	c.Client = ghClient
@@ -94,25 +98,29 @@ func (c *GHClient) init(tokenSource oauth2.TokenSource) {
 	// 检查 token 是否有效
 	if !c.isValidToken(httpClient) {
 		log.Logger.Info("Invalid token.")
-		return
+		return false
 	}
 
+	// 检查 client 是否可用
 	if c.isLimited() {
 		log.Logger.Info("Hit rate limit while initializing the client.")
+		return false
 	}
+
+	return true
 }
 
 // 检查 token 是否有效
 func (c *GHClient) isValidToken(httpClient *http.Client) bool {
 	resp, err := c.makeRequest(httpClient)
 	if err != nil {
-		log.Logger.Error("makeRequest returned error.", zap.String("error:", err.Error()))
+		log.Logger.Error("makeRequest returned error.", zap.Error(err))
 		return false
 	}
 
 	err = github.CheckResponse(resp)
 	if e, ok := err.(*github.TwoFactorAuthError); ok {
-		log.Logger.Error("401 Unauthorized.", zap.String("error:", e.Error()))
+		log.Logger.Error("401 Unauthorized.", zap.Error(e))
 		return false
 	}
 
@@ -123,14 +131,14 @@ func (c *GHClient) isValidToken(httpClient *http.Client) bool {
 func (c *GHClient) makeRequest(httpClient *http.Client) (*http.Response, error) {
 	req, err := c.Client.NewRequest("GET", "", nil)
 	if err != nil {
-		log.Logger.Error("Client.NewRequest returned error.", zap.String("error:", err.Error()))
+		log.Logger.Error("Client.NewRequest returned error.", zap.Error(err))
 		return nil, err
 	}
 
 	// 发起请求
 	resp, err := httpClient.Do(req)
 	if err != nil {
-		log.Logger.Error("httpClient.Do returned error.", zap.String("error:", err.Error()))
+		log.Logger.Error("httpClient.Do returned error.", zap.Error(err))
 		return nil, err
 	}
 
@@ -141,7 +149,7 @@ func (c *GHClient) makeRequest(httpClient *http.Client) (*http.Response, error) 
 func (c *GHClient) isLimited() bool {
 	rate, _, err := c.Client.RateLimits(context.Background())
 	if err != nil {
-		log.Logger.Error("Client.RateLimits returned error.", zap.String("error:", err.Error()))
+		log.Logger.Error("Client.RateLimits returned error.", zap.Error(err))
 		return true
 	}
 
@@ -171,16 +179,11 @@ func (c *GHClient) isLimited() bool {
 }
 
 // 初始化 client 的 timer
-func (c *GHClient) initTimer() {
-	var empty = Rate{}
-	if c.rateLimits[coreCategory] != empty {
-		coreTimer := time.NewTimer(c.rateLimits[coreCategory].Reset.Sub(time.Now()))
-		c.timer = coreTimer
-		return
-	}
-	if c.rateLimits[searchCategory] != empty {
-		searchTimer := time.NewTimer(c.rateLimits[searchCategory].Reset.Sub(time.Now()))
-		c.timer = searchTimer
+func (c *GHClient) initTimer(resp *github.Response) {
+	if resp != nil {
+		timer := time.NewTimer((*resp).Reset.Time.Sub(time.Now()) + time.Second*2)
+		c.timer = timer
+
 		return
 	}
 }
@@ -190,7 +193,11 @@ func newClients(tokens []string) []*GHClient {
 	var clients []*GHClient
 
 	for _, t := range tokens {
-		client := newClient(t)
+		client, err := newClient(t)
+		if err != nil {
+			continue
+		}
+
 		clients = append(clients, client)
 	}
 
@@ -202,6 +209,8 @@ var tokens []string = []string{
 	"5511599ff7aebf94476ce3eda7741ab7ae797ef9",
 	"78d1dcb42b8c4368884603cfcd4f3a1581d771d2",
 	"5df193b89001e9fabfdb947a88cdd8b6e45378f5",
+	"666d41b2dcb83f241035d49100c9dcca8fd367b3",
+	"0c30c19f9b870ddfd9395e0feceeddda1957dd22",
 }
 
 type ClientManager struct {
@@ -248,20 +257,21 @@ func NewClientManager() *ClientManager {
 
 // GetClient 读取 client
 func (m *ClientManager) GetClient() *GHClient {
-	select {
-	case c := <-m.Dispatch:
-		return c
-	default:
-		return nil
+	for {
+		select {
+		case c := <-m.Dispatch:
+			return c
+		}
 	}
 }
 
 // PutClient 将 client 放回 manager
-func PutClient(client *GHClient) {
-	client.initTimer()
-	<-client.timer.C
+// resp: 使用 client 时返回的 response
+func PutClient(client *GHClient, resp *github.Response) {
+	client.initTimer(resp)
 
+	<-client.timer.C
 	select {
-	case client.manager.reclaim <- client:
+	case client.Manager.reclaim <- client:
 	}
 }

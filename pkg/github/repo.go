@@ -40,51 +40,6 @@ import (
 	"Andariel/pkg/utility"
 )
 
-// GetRepoByID 根据库 ID 调用 github API 获取库信息
-func GetRepoByID(client *GHClient, repoID int) (*github.Repository, *github.Response, error) {
-	repo, resp, err := client.Client.Repositories.GetByID(context.Background(), repoID)
-	if err != nil {
-		if resp == nil {
-			return nil, nil, err
-		}
-
-		return nil, resp, err
-	}
-
-	return repo, resp, nil
-}
-
-// GetAllRepos 调用  github API 获取所有库信息
-// 参数 opt 指定本次要获取多少个库，将获取的库分多少页，每页包含多少个库（最高 100 个）
-// For example:
-//
-//	opt := &github.RepositoryListAllOptions{
-//		ListOptions: github.ListOptions{PerPage: 10},
-//	}
-func GetAllRepos(client *GHClient, opt *github.RepositoryListAllOptions) ([]*github.Repository, *github.Response, error) {
-	var (
-		allRepos []*github.Repository
-		resp     *github.Response
-	)
-
-	for {
-		repos, resp, err := client.Client.Repositories.ListAll(context.Background(), opt)
-		if err != nil {
-			return allRepos, resp, err
-		}
-
-		allRepos = append(allRepos, repos...)
-
-		if len(repos) == 0 {
-			break
-		}
-
-		opt.Since = *repos[len(repos)-1].ID
-	}
-
-	return allRepos, resp, nil
-}
-
 // SearchRepos 按条件从 github 搜索库，受 github API 限制，一次请求只能获取 1000 条记录
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
 func searchRepos(client *GHClient, query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
@@ -114,11 +69,7 @@ func searchRepos(client *GHClient, query string, opt *github.SearchOptions) ([]g
 	}
 
 finish:
-	if len(result) != 0 {
-		stopAt = utility.SplitQuery(query)
-	} else {
-		stopAt = ""
-	}
+	stopAt = utility.SplitQuery(query)
 
 	return result, resp, stopAt, err
 }
@@ -160,7 +111,7 @@ func SearchReposByCreated(client *GHClient, queries []string, querySeg string, o
 	}
 
 finish:
-	return result, resp, stopAt, nil
+	return result, resp, stopAt, err
 }
 
 // SearchReposByStartTime 按指定创建时间、时间间隔及其它条件搜索库
@@ -204,14 +155,14 @@ func SearchReposByStartTime(client *GHClient, year int, month time.Month, day in
 		case constants.Month:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 1, 0).Format("2006-01-02")
 		case constants.Week:
-			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 7).Format("2006-01-02")
+			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 6).Format("2006-01-02")
 		case constants.Day:
-			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 1).Format("2006-01-02")
+			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 0, 0).Format("2006-01-02")
 		default:
 			dateFormat = date.Format("2006-01-02") + " .. " + date.AddDate(0, 1, 0).Format("2006-01-02")
 		}
 
-		query := querySeg + dateFormat
+		query := querySeg + "\"" + dateFormat + "\""
 
 		repos, resp, stopAt, err = searchRepos(client, query, opt)
 		if err != nil {
@@ -220,15 +171,18 @@ func SearchReposByStartTime(client *GHClient, year int, month time.Month, day in
 
 		result = append(result, repos...)
 
+		// 防止触发 GitHub 的滥用检测机制，等待一秒
+		time.Sleep(1 * time.Second)
+
 		switch incremental {
 		case constants.Quarter:
 			date = date.AddDate(0, 3, 1)
 		case constants.Month:
 			date = date.AddDate(0, 1, 1)
 		case constants.Week:
-			date = date.AddDate(0, 0, 8)
+			date = date.AddDate(0, 0, 7)
 		case constants.Day:
-			date = date.AddDate(0, 0, 2)
+			date = date.AddDate(0, 0, 1)
 		default:
 			date = date.AddDate(0, 1, 1)
 		}
@@ -236,18 +190,4 @@ func SearchReposByStartTime(client *GHClient, year int, month time.Month, day in
 
 finish:
 	return result, resp, stopAt, err
-}
-
-// 根据 *github.Response 等待相应时间
-func Wait(resp *github.Response) {
-	if resp != nil && resp.Remaining <= 1 {
-		gap := time.Duration(resp.Reset.Local().Unix() - time.Now().Unix())
-		sleep := gap * time.Second
-
-		if sleep < 0 {
-			sleep = -sleep
-		}
-
-		time.Sleep(sleep)
-	}
 }

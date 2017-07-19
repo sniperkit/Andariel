@@ -41,11 +41,11 @@ import (
 func GetOwnerByID(ownerID int, client *GHClient) (*models.MDUser, *github.Response, error) {
 	owner, resp, err := client.Client.Users.GetByID(context.Background(), ownerID)
 	if err != nil {
-		if resp == nil {
-			return nil, nil, err
+		if resp != nil {
+			return nil, resp, err
 		}
 
-		return nil, resp, err
+		return nil, nil, err
 	}
 
 	user := &models.MDUser{

@@ -30,6 +30,8 @@
 package process
 
 import (
+	"strings"
+	"sync"
 	"time"
 
 	"github.com/google/go-github/github"
@@ -42,7 +44,7 @@ import (
 	"Andariel/pkg/utility"
 )
 
-var ClientManager *git.ClientManager = git.NewClientManager()
+var clientManager *git.ClientManager = git.NewClientManager()
 
 // 逻辑判断后，存储库信息到数据库
 func StoreRepo(repo *github.Repository, client *git.GHClient) error {
@@ -81,44 +83,65 @@ func StoreRepo(repo *github.Repository, client *git.GHClient) error {
 
 // SearchRepos 从指定时间（库的创建时间）开始搜索，并将结果保存到数据库
 func SearchRepos(year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) {
-	client := ClientManager.GetClient()
+	var (
+		client  *git.GHClient
+		ok      bool
+		wg      sync.WaitGroup
+		e       *github.AbuseRateLimitError
+		newDate []int
+		result  []github.Repository
+	)
+
+	client = clientManager.GetClient()
+	client.Manager = clientManager
 
 search:
 	repos, resp, stopAt, err := git.SearchReposByStartTime(client, year, month, day, incremental, querySeg, opt)
+	result = append(result, repos...)
+
 	if err != nil {
-		log.Logger.Error("SearchReposByStartTime returned error.",
-			zap.String("error:", err.Error()))
+		if _, ok = err.(*github.RateLimitError); ok {
+			log.Logger.Error("SearchReposByStartTime hit limit error, it's time to change client.", zap.Error(err))
 
-		if _, ok := err.(*github.RateLimitError); ok {
-			goto store
+			goto changeClient
+		} else if e, ok = err.(*github.AbuseRateLimitError); ok {
+			log.Logger.Error("SearchReposByStartTime have triggered an abuse detection mechanism.", zap.Error(err))
+
+			time.Sleep(*e.RetryAfter)
+			goto search
+		} else if strings.Contains(err.Error(), "timeout") {
+			log.Logger.Info("SearchReposByStartTime has encountered a timeout error. Sleep for five minutes.")
+			time.Sleep(5 * time.Minute)
+
+			goto search
 		} else {
-			return
-		}
-	}
-
-store:
-	// 将获取的库存储到数据库
-	for _, repo := range repos {
-		err = StoreRepo(&repo, client)
-		if err != nil {
-			log.Logger.Error("StoreRepo returned error.",
-				zap.String("error:", err.Error()))
+			log.Logger.Error("SearchRepos terminated because of this error.", zap.Error(err))
 
 			return
 		}
+	} else {
+
+		goto store
 	}
 
-	// 判断 client 是否遇到速率限制并将该 client 放回 ClientManager，切换到下个 client 继续执行任务
-	if resp != nil && resp.Remaining <= 1 {
-		go git.PutClient(client)
+changeClient:
+	{
+		go func() {
+			wg.Add(1)
+			defer wg.Done()
 
-		client = ClientManager.GetClient()
+			git.PutClient(client, resp)
+		}()
+
+		client = clientManager.GetClient()
+		client.Manager = clientManager
 
 		if stopAt != "" {
-			newDate, err := utility.SplitDate(stopAt)
+			newDate, err = utility.SplitDate(stopAt)
 			if err != nil {
-				log.Logger.Error("SplitDate returned error.",
-					zap.String("error:", err.Error()))
+				log.Logger.Error("SplitDate returned error.", zap.Error(err))
+
+				return
 			}
 
 			year = newDate[0]
@@ -150,11 +173,46 @@ store:
 				month = time.December
 			}
 			day = newDate[2]
-		} else {
-			log.Logger.Info("stopAt is empty string.")
-			return
+
+			goto search
 		}
 
-		goto search
+		log.Logger.Info("stopAt is empty string, stop searching.")
 	}
+
+store:
+	log.Logger.Info("Start storing repositories now.")
+	for _, repo := range result {
+	repeatStore:
+		err = StoreRepo(&repo, client)
+		if err != nil {
+			if _, ok = err.(*github.RateLimitError); ok {
+				log.Logger.Error("StoreRepo hit limit error, it's time to change client.", zap.Error(err))
+
+				go func() {
+					wg.Add(1)
+					defer wg.Done()
+
+					git.PutClient(client, resp)
+				}()
+
+				client = clientManager.GetClient()
+				client.Manager = clientManager
+
+				goto repeatStore
+			} else if e, ok = err.(*github.AbuseRateLimitError); ok {
+				log.Logger.Error("SearchReposByStartTime have triggered an abuse detection mechanism.", zap.Error(err))
+
+				time.Sleep(*e.RetryAfter)
+				goto repeatStore
+			} else {
+				log.Logger.Error("StoreRepo encounter this error, proceed to the next loop.", zap.Error(err))
+
+				continue
+			}
+		}
+	}
+
+	wg.Wait()
+	log.Logger.Info("All search and storage tasks have been successful.")
 }
