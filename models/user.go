@@ -39,8 +39,10 @@ import (
 type GitUserServiceProvider struct {
 }
 
-var GitUserService *GitUserServiceProvider
-var GitUserCollection *mgo.Collection
+var (
+	GitUserService *GitUserServiceProvider
+	GitUserCollection *mgo.Collection
+)
 
 // 连接、设置索引
 func PrepareGitUser() {

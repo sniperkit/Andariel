@@ -40,8 +40,10 @@ import (
 type GitReposServiceProvider struct {
 }
 
-var GitReposService *GitReposServiceProvider
-var GitReposCollection *mgo.Collection
+var(
+	GitReposService *GitReposServiceProvider
+	GitReposCollection *mgo.Collection
+)
 
 // 连接、设置索引
 func PrepareGitRepos(colName string) {

@@ -66,6 +66,20 @@ type Rate struct {
 	Reset     time.Time
 }
 
+type ClientManager struct {
+	reclaim  chan *GHClient
+	Dispatch chan *GHClient
+}
+
+var tokens []string = []string{
+	"54f7488c8f72d3e63692b2bf04167d97e7a29e1d",
+	"5511599ff7aebf94476ce3eda7741ab7ae797ef9",
+	"78d1dcb42b8c4368884603cfcd4f3a1581d771d2",
+	"5df193b89001e9fabfdb947a88cdd8b6e45378f5",
+	"666d41b2dcb83f241035d49100c9dcca8fd367b3",
+	"0c30c19f9b870ddfd9395e0feceeddda1957dd22",
+}
+
 // 新建 client
 func newClient(token string) (client *GHClient, err error) {
 	if token == "" {
@@ -202,20 +216,6 @@ func newClients(tokens []string) []*GHClient {
 	}
 
 	return clients
-}
-
-var tokens []string = []string{
-	"54f7488c8f72d3e63692b2bf04167d97e7a29e1d",
-	"5511599ff7aebf94476ce3eda7741ab7ae797ef9",
-	"78d1dcb42b8c4368884603cfcd4f3a1581d771d2",
-	"5df193b89001e9fabfdb947a88cdd8b6e45378f5",
-	"666d41b2dcb83f241035d49100c9dcca8fd367b3",
-	"0c30c19f9b870ddfd9395e0feceeddda1957dd22",
-}
-
-type ClientManager struct {
-	reclaim  chan *GHClient
-	Dispatch chan *GHClient
 }
 
 func (r *ClientManager) Run(done chan bool) {
