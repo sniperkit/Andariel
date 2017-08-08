@@ -35,10 +35,11 @@ import (
 	"github.com/google/go-github/github"
 
 	"Andariel/models"
+	gitClient "nuts/github/client"
 )
 
-// 调用 API 获取作者信息
-func GetOwnerByID(ownerID int, client *GHClient) (*models.MDUser, *github.Response, error) {
+// GetOwnerByID 调用 GitHub API 获取作者信息
+func GetOwnerByID(ownerID int, client *gitClient.GHClient) (*models.MDUser, *github.Response, error) {
 	owner, resp, err := client.Client.Users.GetByID(context.Background(), ownerID)
 	if err != nil {
 		if resp != nil {

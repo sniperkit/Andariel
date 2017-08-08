@@ -111,7 +111,7 @@ type MDRepos struct {
 	Size            *int              `bson:"Size,omitempty" json:"size"`
 }
 
-// 存储库信息及作者在 MDUser 数据库中的 ID
+// Create 存储库信息及作者在 MDUser 数据库中的 ID
 func (rsp *GitReposServiceProvider) Create(repos *github.Repository, owner *string) error {
 	r := MDRepos{
 		RepoID:          repos.ID,

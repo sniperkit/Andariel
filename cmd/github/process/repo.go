@@ -42,12 +42,16 @@ import (
 	git "Andariel/pkg/github"
 	"Andariel/pkg/log"
 	"Andariel/pkg/utility"
+	gitClient "nuts/github/client"
 )
 
-var clientManager *git.ClientManager = git.NewClientManager()
+// 填入自己生成的 token
+var tokens []string = []string{}
 
-// 逻辑判断后，存储库信息到数据库
-func StoreRepo(repo *github.Repository, client *git.GHClient) error {
+var clientManager *gitClient.ClientManager = gitClient.NewClientManager(tokens)
+
+// StoreRepo 将库信息存储到数据库
+func StoreRepo(repo *github.Repository, client *gitClient.GHClient) error {
 	// 判断数据库中是否有此作者信息
 	oldUserID, err := models.GitUserService.GetUserID(repo.Owner.Login)
 	if err != nil {
@@ -84,7 +88,7 @@ func StoreRepo(repo *github.Repository, client *git.GHClient) error {
 // SearchRepos 从指定时间（库的创建时间）开始搜索，并将结果保存到数据库
 func SearchRepos(year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) {
 	var (
-		client  *git.GHClient
+		client  *gitClient.GHClient
 		ok      bool
 		wg      sync.WaitGroup
 		e       *github.AbuseRateLimitError
@@ -130,7 +134,7 @@ changeClient:
 			wg.Add(1)
 			defer wg.Done()
 
-			git.PutClient(client, resp)
+			gitClient.PutClient(client, resp)
 		}()
 
 		client = clientManager.GetClient()
@@ -193,7 +197,7 @@ store:
 					wg.Add(1)
 					defer wg.Done()
 
-					git.PutClient(client, resp)
+					gitClient.PutClient(client, resp)
 				}()
 
 				client = clientManager.GetClient()

@@ -37,11 +37,13 @@ import (
 type LabelServiceProvider struct {
 }
 
-var GithubSession *mgo.Session
-var LabelService *LabelServiceProvider
-var LabelCollection *mgo.Collection
+var (
+	GithubSession   *mgo.Session
+	LabelService    *LabelServiceProvider
+	LabelCollection *mgo.Collection
+)
 
-// 连接数据库、创建索引
+// PrepareGitLabel 连接数据库、创建索引
 func PrepareGitLabel() {
 	LabelCollection = GithubSession.DB("github").C("Label")
 
@@ -58,7 +60,7 @@ func PrepareGitLabel() {
 	LabelService = &LabelServiceProvider{}
 }
 
-// 标签数据结构
+// MDLabel 标签数据结构
 type MDLabel struct {
 	LabelID bson.ObjectId `bson:"LabelID,omitempty" json:"id"`
 	Name    string        `bson:"Name" json:"name"`
@@ -67,13 +69,13 @@ type MDLabel struct {
 	Total   uint64        `bson:"Total" json:"total"`
 }
 
-// 修改标签状态数据结构
+// Activate 修改标签状态数据结构
 type Activate struct {
 	Name   string
 	Active bool
 }
 
-// 修改标签内容数据结构
+// MDModifyLabel 修改标签内容数据结构
 type MDModifyLabel struct {
 	LabelID string
 	Name    string
@@ -81,7 +83,7 @@ type MDModifyLabel struct {
 	Active  bool
 }
 
-// 新建标签
+// Create 新建标签
 func (tsp *LabelServiceProvider) Create(Label *MDLabel) error {
 	l := MDLabel{
 		LabelID: bson.NewObjectId(),
@@ -98,7 +100,7 @@ func (tsp *LabelServiceProvider) Create(Label *MDLabel) error {
 	return nil
 }
 
-// 获取所有标签
+// ListAll 获取所有标签
 func (tsp *LabelServiceProvider) ListAll() ([]MDLabel, error) {
 	var l []MDLabel
 
@@ -110,7 +112,7 @@ func (tsp *LabelServiceProvider) ListAll() ([]MDLabel, error) {
 	return l, nil
 }
 
-// 获取单个标签内容
+// GetLabelInfo 获取单个标签内容
 func (tsp *LabelServiceProvider) GetLabelInfo(labelID string) (MDLabel, error) {
 	var l MDLabel
 
@@ -119,7 +121,7 @@ func (tsp *LabelServiceProvider) GetLabelInfo(labelID string) (MDLabel, error) {
 	return l, err
 }
 
-// 修改标签状态
+// Activate 修改标签状态
 func (tsp *LabelServiceProvider) Activate(activate Activate) error {
 	update := bson.M{"$set": bson.M{
 		"Active": activate.Active,
@@ -133,7 +135,7 @@ func (tsp *LabelServiceProvider) Activate(activate Activate) error {
 	return nil
 }
 
-// 修改标签内容
+// Modify 修改标签内容
 func (tsp *LabelServiceProvider) Modify(label MDModifyLabel) error {
 	update := bson.M{"$set": bson.M{
 		"Name":   label.Name,

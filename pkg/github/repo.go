@@ -38,11 +38,12 @@ import (
 
 	"Andariel/pkg/constants"
 	"Andariel/pkg/utility"
+	gitClient "nuts/github/client"
 )
 
 // SearchRepos 按条件从 github 搜索库，受 github API 限制，一次请求只能获取 1000 条记录
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func searchRepos(client *GHClient, query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
+func searchRepos(client *gitClient.GHClient, query string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result []github.Repository
 		repos  *github.RepositoriesSearchResult
@@ -91,7 +92,7 @@ finish:
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchReposByCreated(client *GHClient, queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
+func SearchReposByCreated(client *gitClient.GHClient, queries []string, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result, repos []github.Repository
 		resp          *github.Response
@@ -136,7 +137,7 @@ finish:
 //         ListOptions: github.ListOptions{PerPage: 100},
 //     }
 // GitHub API docs: https://developer.github.com/v3/search/#search-repositories
-func SearchReposByStartTime(client *GHClient, year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
+func SearchReposByStartTime(client *gitClient.GHClient, year int, month time.Month, day int, incremental, querySeg string, opt *github.SearchOptions) ([]github.Repository, *github.Response, string, error) {
 	var (
 		result, repos []github.Repository
 		resp          *github.Response

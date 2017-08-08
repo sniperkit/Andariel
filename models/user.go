@@ -82,7 +82,7 @@ type MDUser struct {
 	PrivateGists      *int              `bson:"PrivateGists,omitempty" json:"privategists"`
 }
 
-// 查询作者信息
+// GetUserByID 查询作者信息
 func (usp *GitUserServiceProvider) GetUserByID(userID *int) (*MDUser, error) {
 	var u MDUser
 
@@ -94,7 +94,7 @@ func (usp *GitUserServiceProvider) GetUserByID(userID *int) (*MDUser, error) {
 	return &u, nil
 }
 
-// 通过 login 获取作者在数据库中的 _id
+// GetUserID 通过 login 获取作者在数据库中的 _id
 func (usp *GitUserServiceProvider) GetUserID(login *string) (string, error) {
 	var u MDUser
 
