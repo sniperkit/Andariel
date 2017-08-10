@@ -34,6 +34,7 @@ import (
 	"sync"
 	"time"
 
+	gitClient "github.com/fengyfei/nuts/github/client"
 	"github.com/google/go-github/github"
 	"go.uber.org/zap"
 	"gopkg.in/mgo.v2"
@@ -42,7 +43,6 @@ import (
 	git "Andariel/pkg/github"
 	"Andariel/pkg/log"
 	"Andariel/pkg/utility"
-	gitClient "nuts/github/client"
 )
 
 // 填入自己生成的 token

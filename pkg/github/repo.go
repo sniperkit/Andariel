@@ -38,7 +38,7 @@ import (
 
 	"Andariel/pkg/constants"
 	"Andariel/pkg/utility"
-	gitClient "nuts/github/client"
+	gitClient "github.com/fengyfei/nuts/github/client"
 )
 
 // SearchRepos 按条件从 github 搜索库，受 github API 限制，一次请求只能获取 1000 条记录

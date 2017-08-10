@@ -35,7 +35,7 @@ import (
 	"github.com/google/go-github/github"
 
 	"Andariel/models"
-	gitClient "nuts/github/client"
+	gitClient "github.com/fengyfei/nuts/github/client"
 )
 
 // GetOwnerByID 调用 GitHub API 获取作者信息
