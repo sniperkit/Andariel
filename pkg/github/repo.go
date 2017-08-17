@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017 SmartestEE Inc.
+ * Copyright (c) 2017 SmartestEE Co., Ltd..
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,8 +36,8 @@ import (
 
 	"github.com/google/go-github/github"
 
-	"Andariel/pkg/constants"
-	"Andariel/pkg/utility"
+	"github.com/fengyfei/Andariel/pkg/constants"
+	"github.com/fengyfei/Andariel/pkg/utility"
 	gitClient "github.com/fengyfei/nuts/github/client"
 )
 

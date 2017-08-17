@@ -1,7 +1,7 @@
 /*
  * MIT License
  *
- * Copyright (c) 2017 SmartestEE Inc.
+ * Copyright (c) 2017 SmartestEE Co., Ltd..
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,10 +30,11 @@
 package main
 
 import (
-	"syscall"
 	"os"
+	"syscall"
 
-	"Andariel/pkg/interrupt"
+	"github.com/fengyfei/Andariel/pkg/interrupt"
+	"github.com/fengyfei/Andariel/pkg/log"
 )
 
 var (
@@ -43,15 +44,15 @@ var (
 func finalHandler(sig os.Signal) {
 	switch sig {
 	case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-		logger.Info("Signal quit/term/int captured")
+		log.Logger.Info("Signal quit/term/int captured")
 		return
 
 	case syscall.SIGHUP:
-		logger.Info("Signal hup captured")
+		log.Logger.Info("Signal hup captured")
 		return
 
 	case syscall.SIGALRM:
-		logger.Info("Signal alrm captured")
+		log.Logger.Info("Signal alrm captured")
 		return
 	}
 }
