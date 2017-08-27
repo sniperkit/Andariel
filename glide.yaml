@@ -1,8 +1,5 @@
 package: Andariel
 import:
-- package: github.com/fengyfei/nuts
-  subpackages:
-  - github/client
 - package: github.com/google/go-github
   subpackages:
   - github
@@ -12,3 +9,4 @@ import:
 - package: gopkg.in/mgo.v2
   subpackages:
   - bson
+- package: github.com/fengyfei/nuts
