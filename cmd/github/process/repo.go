@@ -48,7 +48,7 @@ import (
 // 填入自己生成的 token
 var tokens []string = []string{}
 
-var clientManager *gitClient.ClientManager = gitClient.NewClientManager(tokens)
+var clientManager *gitClient.ClientManager = gitClient.NewManager(tokens)
 
 // StoreRepo 将库信息存储到数据库
 func StoreRepo(repo *github.Repository, client *gitClient.GHClient) error {
@@ -96,8 +96,7 @@ func SearchRepos(year int, month time.Month, day int, incremental, querySeg stri
 		result  []github.Repository
 	)
 
-	client = clientManager.GetClient()
-	client.Manager = clientManager
+	client = clientManager.Dispatch()
 
 search:
 	repos, resp, stopAt, err := git.SearchReposByStartTime(client, year, month, day, incremental, querySeg, opt)
@@ -134,11 +133,10 @@ changeClient:
 			wg.Add(1)
 			defer wg.Done()
 
-			gitClient.PutClient(client, resp)
+			gitClient.Reclaim(client, resp)
 		}()
 
-		client = clientManager.GetClient()
-		client.Manager = clientManager
+		client = clientManager.Dispatch()
 
 		if stopAt != "" {
 			newDate, err = utility.SplitDate(stopAt)
@@ -197,11 +195,10 @@ store:
 					wg.Add(1)
 					defer wg.Done()
 
-					gitClient.PutClient(client, resp)
+					gitClient.Reclaim(client, resp)
 				}()
 
-				client = clientManager.GetClient()
-				client.Manager = clientManager
+				client = clientManager.Dispatch()
 
 				goto repeatStore
 			} else if e, ok = err.(*github.AbuseRateLimitError); ok {
