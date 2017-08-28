@@ -96,6 +96,8 @@ func SearchRepos(year int, month time.Month, day int, incremental, querySeg stri
 		result  []github.Repository
 	)
 
+	defer clientManager.Shutdown()
+
 	client = clientManager.Fetch()
 
 search:
@@ -215,6 +217,7 @@ store:
 	}
 
 	wg.Wait()
-	clientManager.Shutdown()
 	log.Logger.Info("All search and storage tasks have been successful.")
+
+	return
 }
