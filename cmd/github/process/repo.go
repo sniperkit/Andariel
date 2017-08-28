@@ -96,7 +96,7 @@ func SearchRepos(year int, month time.Month, day int, incremental, querySeg stri
 		result  []github.Repository
 	)
 
-	client = clientManager.Dispatch()
+	client = clientManager.Fetch()
 
 search:
 	repos, resp, stopAt, err := git.SearchReposByStartTime(client, year, month, day, incremental, querySeg, opt)
@@ -136,7 +136,7 @@ changeClient:
 			gitClient.Reclaim(client, resp)
 		}()
 
-		client = clientManager.Dispatch()
+		client = clientManager.Fetch()
 
 		if stopAt != "" {
 			newDate, err = utility.SplitDate(stopAt)
@@ -198,7 +198,7 @@ store:
 					gitClient.Reclaim(client, resp)
 				}()
 
-				client = clientManager.Dispatch()
+				client = clientManager.Fetch()
 
 				goto repeatStore
 			} else if e, ok = err.(*github.AbuseRateLimitError); ok {
