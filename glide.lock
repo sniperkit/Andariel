@@ -1,8 +1,8 @@
 hash: b7933db49b272c6122975a629da190687d0c381eb07bde046194d606a6513eff
-updated: 2017-08-28T10:21:35.765970902+08:00
+updated: 2017-08-28T22:19:16.785250652+08:00
 imports:
 - name: github.com/fengyfei/nuts
-  version: 2287c41d48cf7de36ceda2ab3efaebd543d523b9
+  version: e031bdbbcdc7452115b0226148f6a5fa076a47d5
   subpackages:
   - github/client
 - name: github.com/fsnotify/fsnotify

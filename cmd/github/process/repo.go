@@ -215,5 +215,6 @@ store:
 	}
 
 	wg.Wait()
+	clientManager.Shutdown()
 	log.Logger.Info("All search and storage tasks have been successful.")
 }
