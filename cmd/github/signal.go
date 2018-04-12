@@ -33,8 +33,8 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/fengyfei/Andariel/pkg/log"
-	"github.com/fengyfei/Andariel/pkg/interrupt"
+	"github.com/TechCatsLab/Andariel/pkg/log"
+	"github.com/TechCatsLab/Andariel/pkg/interrupt"
 )
 
 var (

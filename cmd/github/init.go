@@ -30,8 +30,8 @@
 package main
 
 import (
-	"github.com/fengyfei/Andariel/pkg/interrupt"
-	"github.com/fengyfei/Andariel/pkg/log"
+	"github.com/TechCatsLab/Andariel/pkg/interrupt"
+	"github.com/TechCatsLab/Andariel/pkg/log"
 )
 
 func init() {

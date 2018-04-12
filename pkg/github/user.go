@@ -34,7 +34,7 @@ import (
 
 	"github.com/google/go-github/github"
 
-	"github.com/fengyfei/Andariel/models"
+	"github.com/TechCatsLab/Andariel/models"
 	gitClient "github.com/fengyfei/nuts/github/client"
 )
 

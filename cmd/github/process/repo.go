@@ -39,10 +39,10 @@ import (
 	"go.uber.org/zap"
 	"gopkg.in/mgo.v2"
 
-	"github.com/fengyfei/Andariel/models"
-	git "github.com/fengyfei/Andariel/pkg/github"
-	"github.com/fengyfei/Andariel/pkg/log"
-	"github.com/fengyfei/Andariel/pkg/utility"
+	"github.com/TechCatsLab/Andariel/models"
+	git "github.com/TechCatsLab/Andariel/pkg/github"
+	"github.com/TechCatsLab/Andariel/pkg/log"
+	"github.com/TechCatsLab/Andariel/pkg/utility"
 )
 
 // 填入自己生成的 token

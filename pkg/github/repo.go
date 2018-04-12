@@ -36,8 +36,8 @@ import (
 
 	"github.com/google/go-github/github"
 
-	"github.com/fengyfei/Andariel/pkg/constants"
-	"github.com/fengyfei/Andariel/pkg/utility"
+	"github.com/TechCatsLab/Andariel/pkg/constants"
+	"github.com/TechCatsLab/Andariel/pkg/utility"
 	gitClient "github.com/fengyfei/nuts/github/client"
 )
 

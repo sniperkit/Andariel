@@ -30,10 +30,10 @@
 package ini
 
 import (
-	"github.com/fengyfei/Andariel/cmd/github/config"
-	"github.com/fengyfei/Andariel/models"
-	"github.com/fengyfei/Andariel/pkg/log"
-	"github.com/fengyfei/Andariel/pkg/mongo"
+	"github.com/TechCatsLab/Andariel/cmd/github/config"
+	"github.com/TechCatsLab/Andariel/models"
+	"github.com/TechCatsLab/Andariel/pkg/log"
+	"github.com/TechCatsLab/Andariel/pkg/mongo"
 )
 
 func PrepareGitSes() {
